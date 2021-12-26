@@ -65,12 +65,12 @@ class Field:
             return ' '
 
         if self.marked:
-            if not game_over:
-                return '?'
+            if game_over:
+                return '!' if self.mine else 'x'
 
-            return '!' if self.mine else 'x'
+            return '?'
 
-        if self.mine and game_over:
+        if game_over and self.mine:
             return 'o'
 
         return '■'
