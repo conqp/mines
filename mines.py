@@ -61,11 +61,8 @@ class Field:
 
     def to_string(self, *, game_over: bool = False) -> str:
         """Returns a string representation."""
-        if self.visited:
-            if self.mine:
-                return '*'
-
-            return ' '
+        if self.visited and self.mine:
+            return '*'
 
         if self.marked:
             if game_over:
@@ -76,7 +73,7 @@ class Field:
         if game_over and self.mine:
             return 'o'
 
-        return '■'
+        return ' ' if game_over else '■'
 
     def toggle_marked(self) -> None:
         """Toggles the marker on this field."""
