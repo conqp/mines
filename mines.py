@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from os import linesep
 from random import choice
-from sys import stderr
+from sys import exit, stderr    # pylint: disable=W0622
 from typing import Iterator, NamedTuple, Optional, Union
 
 
@@ -266,4 +266,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    main()
+    exit(main())
