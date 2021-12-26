@@ -79,6 +79,9 @@ class Field:
 
     def toggle_marked(self) -> None:
         """Toggles the marker on this field."""
+        if self.visited:
+            return
+
         self.marked = not self.marked
 
 
@@ -163,6 +166,9 @@ class Minefield(list):
             return
 
         if (field := self.field_at(position)).visited:
+            return
+
+        if field.marked:
             return
 
         field.visited = True
