@@ -3,17 +3,12 @@
 
 from __future__ import annotations
 from argparse import ArgumentParser, Namespace
-from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from os import linesep
 from random import choice
 from sys import exit, stderr    # pylint: disable=W0622
-from typing import Iterator, NamedTuple, Optional, Union
-
-
-class OffGrid(ValueError):
-    """Indicates that the given coordinate is not on the grid."""
+from typing import Iterator, NamedTuple, Optional
 
 
 class SteppedOnMine(Exception):
@@ -90,17 +85,19 @@ class Minefield(list):
     def __str__(self) -> str:
         return self.to_string()
 
-    def __getitem__(self, item: Union[int, Coordinate]) -> Union[list, Field]:
-        if isinstance(item, Coordinate):
-            return self.field_at(item)
+    def is_on_field(self, position: Coordinate) -> bool:
+        """Determine whether the position is on the field."""
+        return 0 <= position.x < self.width and 0 <= position.y < self.width
 
-        return super().__getitem__(item)
+    def field_at(self, position: Coordinate) -> Field:
+        """Returns the field at the given position."""
+        return self[position.y][position.x]
 
     def get_neighbors(self, position: Coordinate) -> Iterator[Field]:
         """Yield fields surrounding the given position."""
         for neighbor in position.neighbors:
-            with suppress(OffGrid):
-                yield self[neighbor]
+            if self.is_on_field(neighbor):
+                yield self.field_at(neighbor)
 
     def count_surrounding_mines(self, position: Coordinate) -> int:
         """Return the amount of mines surrounding the given position."""
@@ -116,7 +113,7 @@ class Minefield(list):
 
     def disable_mine(self, position: Coordinate) -> None:
         """Set the field at the given position to not have a mine."""
-        self[position].mine = False
+        self.field_at(position).mine = False
 
     def populate(self, mines: int) -> None:
         """Populate the mine field with mines."""
@@ -133,24 +130,13 @@ class Minefield(list):
         for field in fields:
             field.mine = False
 
-    def is_on_field(self, position: Coordinate) -> bool:
-        """Determine whether the position is on the field."""
-        return 0 <= position.x < self.width and 0 <= position.y < self.width
-
-    def field_at(self, position: Coordinate) -> Field:
-        """Returns the field at the given position."""
-        if self.is_on_field(position):
-            return self[position.y][position.x]
-
-        raise OffGrid('Coordinate not on field.')
-
     def toggle_marked(self, position: Coordinate) -> None:
         """Toggels the marker on the given field."""
-        self[position].toggle_marked()
+        self.field_at(position).toggle_marked()
 
     def visit(self, position: Coordinate) -> None:
         """Visit the field at the given position."""
-        if (field := self[position]).visited:
+        if (field := self.field_at(position)).visited:
             return
 
         field.visited = True
@@ -159,9 +145,8 @@ class Minefield(list):
             raise SteppedOnMine()
 
         if self.count_surrounding_mines(position) == 0:
-            for neighbor in position.neighbors:
-                with suppress(OffGrid):
-                    self.visit(neighbor)
+            for neighbor in self.get_neighbors(position):
+                self.visit(neighbor)
 
     def sweep_completed(self) -> bool:
         """Checks whether all fields have been visited."""
