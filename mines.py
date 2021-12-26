@@ -99,7 +99,7 @@ class Minefield(list):
     def get_neighbors(self, position: Coordinate) -> Iterator[Field]:
         """Yield fields surrounding the given position."""
         for neighbor in position.neighbors:
-            with suppress(ValueError):
+            with suppress(OffGrid):
                 yield self[neighbor]
 
     def count_surrounding_mines(self, position: Coordinate) -> int:
