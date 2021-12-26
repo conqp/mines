@@ -131,7 +131,7 @@ class Minefield(list):
 
     def toggle_mark(self, position: Coordinate) -> None:
         """Toggels the marker on the given field."""
-        (field := self[position]).marked = not field.marked
+        field.marked = not (field := self[position]).marked
 
     def visit(self, position: Coordinate) -> None:
         """Visit the field at the given position."""
@@ -221,11 +221,14 @@ def main() -> int:
             try:
                 minefield.visit(action.position)
             except SteppedOnMine:
+                print(minefield)
                 print('Game over.')
                 return 1
         else:
             minefield.toggle_mark(action.position)
 
+    print(minefield)
+    print('All mines cleared. Great job.')
     return 0
 
 
