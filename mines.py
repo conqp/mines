@@ -200,7 +200,9 @@ def print_minefield(minefield: Minefield, *, game_over: bool = False) -> None:
         print(f'{hex(index)[2]}|', line, sep='')
 
 
-def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
+def read_action(minefield: Minefield, *,
+                prompt: str = 'Enter action and coordinate: '
+                ) -> Action:
     """Reads an Action."""
 
     try:
@@ -212,6 +214,8 @@ def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
         action, pos_x, pos_y = text.split()
         action = ActionType(action)
         position = Coordinate(int(pos_x, 16), int(pos_y, 16))
+        # Check if coordinate is on the field:
+        minefield[position]     # pylint: disable=W0104
     except ValueError:
         print('Please enter: (visit|mark) <int:x> <int:y>', file=stderr)
         return read_action(prompt)
@@ -240,7 +244,7 @@ def main() -> int:
         print_minefield(minefield)
 
         try:
-            action = read_action()
+            action = read_action(minefield)
         except KeyboardInterrupt:
             print('\nAborted by user.')
             return 2
