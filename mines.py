@@ -282,7 +282,7 @@ def main() -> int:
             print('\nAborted by user.')
             return 3
         except GameOver as game_over:
-            print(minefield.to_string(game_over=True))
+            print_minefield(minefield, game_over=True)
             print(game_over.message)
             return game_over.returncode
 
