@@ -60,18 +60,18 @@ class Field:
         """Returns a string representation."""
         if self.visited:
             if self.mine:
-                return '☠'
+                return '\033[1m*\033[0m'
 
             return ' '
 
         if self.marked:
             if not game_over:
-                return '⚐'
+                return '?'
 
-            return '✓' if self.mine else '✗'
+            return '!' if self.mine else 'x'
 
         if self.mine and game_over:
-            return '💣'
+            return '*'
 
         return '■'
 
@@ -190,12 +190,13 @@ class Action(NamedTuple):
 def print_minefield(minefield: Minefield, *, game_over: bool = False) -> None:
     """Prints the mine field with row and column markers."""
 
-    print(' |', *(f'{index} ' for index in range(minefield.width)), sep='')
+    print(' |', *(f'{hex(index)[2]} ' for index in range(minefield.width)),
+          sep='')
     print('-+', '-' * (minefield.width * 2 - 1), sep='')
     lines = minefield.to_string(game_over=game_over).split(linesep)
 
     for index, line in enumerate(lines):
-        print(f'{index}|', line, sep='')
+        print(f'{hex(index)[2]}|', line, sep='')
 
 
 def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
@@ -209,7 +210,7 @@ def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
     try:
         action, pos_x, pos_y = text.split()
         action = ActionType(action)
-        position = Coordinate(int(pos_x), int(pos_y))
+        position = Coordinate(int(pos_x, 16), int(pos_y, 16))
     except ValueError:
         print('Please enter: (visit|mark) <int:x> <int:y>', file=stderr)
         return read_action(prompt)
