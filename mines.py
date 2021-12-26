@@ -7,8 +7,13 @@ from dataclasses import dataclass
 from enum import Enum
 from os import linesep
 from random import choice
+from string import digits, ascii_lowercase
 from sys import exit, stderr    # pylint: disable=W0622
 from typing import Iterator, NamedTuple, Optional
+
+
+NUM_TO_STR = dict(zip(range(37), digits + ascii_lowercase))
+STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
 
 
 class GameOver(Exception):
@@ -104,7 +109,7 @@ class Minefield(list):
 
     def is_on_field(self, position: Coordinate) -> bool:
         """Determine whether the position is on the field."""
-        return 0 <= position.x < self.width and 0 <= position.y < self.width
+        return 0 <= position.x < self.width and 0 <= position.y < self.height
 
     def field_at(self, position: Coordinate) -> Field:
         """Returns the field at the given position."""
@@ -195,13 +200,13 @@ class Action(NamedTuple):
 def print_minefield(minefield: Minefield, *, game_over: bool = False) -> None:
     """Prints the mine field with row and column markers."""
 
-    print(' |', *(f'{hex(index)[2]} ' for index in range(minefield.width)),
+    print(' |', *(f'{NUM_TO_STR[index]} ' for index in range(minefield.width)),
           sep='')
     print('-+', '-' * (minefield.width * 2 - 1), sep='')
     lines = minefield.to_string(game_over=game_over).split(linesep)
 
     for index, line in enumerate(lines):
-        print(f'{hex(index)[2]}|', line, sep='')
+        print(f'{NUM_TO_STR[index]}|', line, sep='')
 
 
 def read_action(minefield: Minefield, *,
@@ -217,9 +222,12 @@ def read_action(minefield: Minefield, *,
     try:
         action, pos_x, pos_y = text.split()
         action = ActionType(action)
-        position = Coordinate(int(pos_x, 16), int(pos_y, 16))
+        position = Coordinate(STR_TO_NUM[pos_x], STR_TO_NUM[pos_y])
     except ValueError:
         print('Please enter: (visit|mark) <int:x> <int:y>', file=stderr)
+        return read_action(minefield, prompt=prompt)
+    except IndexError:
+        print('Coordinates are out of range.', file=stderr)
         return read_action(minefield, prompt=prompt)
 
     if minefield.is_on_field(position):
@@ -268,6 +276,10 @@ def main() -> int:
     """Test stuff."""
 
     args = get_args()
+
+    if args.width > (maxsize := len(NUM_TO_STR)) or args.height > maxsize:
+        print(f'Max field width and height are {maxsize}.', file=stderr)
+        return 2
 
     if args.mines >= (args.width * args.height):
         print('Too many mines for field.', file=stderr)
