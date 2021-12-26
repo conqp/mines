@@ -129,7 +129,8 @@ class Minefield(list):
                   game_over: bool = False) -> str:
         """Return a str representation of the field at the given coordiate."""
         if not field.mine and (field.visited or game_over):
-            return str(self.count_surrounding_mines(position) or str(field))
+            if mines := self.count_surrounding_mines(position):
+                return str(mines)
 
         return str(field.to_string(game_over=game_over))
 
