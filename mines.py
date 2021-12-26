@@ -170,7 +170,8 @@ class Minefield(list):
 
     def sweep_completed(self) -> bool:
         """Checks whether all fields have been visited."""
-        return all(field.visited for row in self for field in row)
+        return all(field.visited for row in self for field in row
+                   if not field.mine)
 
 
 class ActionType(Enum):
