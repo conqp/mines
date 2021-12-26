@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from random import choice
 from sys import stderr
-from typing import NamedTuple, Optional, Union
+from typing import Iterator, NamedTuple, Optional, Union
 
 
 class OffGrid(ValueError):
@@ -52,18 +52,20 @@ class Field:
         if self.visited:
             if self.mine:
                 return '☠'
-                
+
             return ' '
 
         if self.marked:
             return '⚐'
-        
+
         return '■'
 
 
 class Minefield(list):
+    """A mine field."""
 
     def __init__(self, width: int = 10, height: int = 10):
+        super().__init__()
         self.width = width
         self.height = height
 
@@ -77,7 +79,7 @@ class Minefield(list):
                 for x, field in enumerate(row)
             ) for y, row in enumerate(self)
         )
-        
+
     def __getitem__(self, item: Union[int, Coordinate]) -> Union[list, Field]:
         if isinstance(item, Coordinate):
             return self.field_at(item)
@@ -116,10 +118,10 @@ class Minefield(list):
             field = choice(fields)
             field.mine = True
             fields.remove(field)
-        
+
         for field in fields:
             field.mine = False
-            
+
     def field_at(self, position: Coordinate) -> Field:
         """Returns the field at the given position."""
         if 0 <= position.x < self.width and 0 <= position.y < self.width:
@@ -129,7 +131,7 @@ class Minefield(list):
 
     def toggle_mark(self, position: Coordinate) -> None:
         """Toggels the marker on the given field."""
-        field.marked = not (field := self[position]).marked
+        (field := self[position]).marked = not field.marked
 
     def visit(self, position: Coordinate) -> None:
         """Visit the field at the given position."""
@@ -137,7 +139,7 @@ class Minefield(list):
             return
 
         field.visited = True
-        
+
         if field.mine:
             raise SteppedOnMine()
 
@@ -167,7 +169,7 @@ class Action(NamedTuple):
 
 def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
     """Reads an Action."""
-    
+
     try:
         text = input(prompt)
     except EOFError:
@@ -178,15 +180,15 @@ def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
         action = ActionType(action)
         position = Coordinate(int(pos_x), int(pos_y))
     except ValueError:
-        print('Please enter: (visit|mark) <int:x> <int:y>', file=stderr) 
+        print('Please enter: (visit|mark) <int:x> <int:y>', file=stderr)
         return read_action(prompt)
-    
+
     return Action(action, position)
 
 
 def get_args(description: str = __doc__) -> Namespace:
     """Parses the command line arguments."""
-    
+
     parser = ArgumentParser(description=description)
     parser.add_argument('--width', type=int, default=8)
     parser.add_argument('--height', type=int, default=8)
@@ -200,7 +202,7 @@ def main() -> int:
     args = get_args()
     minefield = Minefield(args.width, args.height)
     first_visit = True
-    
+
     while not minefield.sweep_completed():
         print(minefield)
 
@@ -210,7 +212,7 @@ def main() -> int:
             print('\nAborted by user.')
             return 2
 
-        if action.action == Action.VISIT:
+        if action.action == ActionType.VISIT:
             if first_visit:
                 first_visit = False
                 minefield.disable_mine(action.position)
