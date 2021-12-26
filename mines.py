@@ -136,6 +136,9 @@ class Minefield(list):
 
     def visit(self, position: Coordinate) -> None:
         """Visit the field at the given position."""
+        if not self.is_on_field(position):
+            return
+
         if (field := self.field_at(position)).visited:
             return
 
@@ -145,7 +148,7 @@ class Minefield(list):
             raise SteppedOnMine()
 
         if self.count_surrounding_mines(position) == 0:
-            for neighbor in self.get_neighbors(position):
+            for neighbor in position.neighbors:
                 self.visit(neighbor)
 
     def sweep_completed(self) -> bool:
