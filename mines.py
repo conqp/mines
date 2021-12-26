@@ -208,7 +208,7 @@ def read_action(minefield: Minefield, *,
     try:
         text = input(prompt)
     except EOFError:
-        return read_action(prompt)
+        return read_action(minefield, prompt=prompt)
 
     try:
         action, pos_x, pos_y = text.split()
@@ -218,7 +218,7 @@ def read_action(minefield: Minefield, *,
         minefield[position]     # pylint: disable=W0104
     except ValueError:
         print('Please enter: (visit|mark) <int:x> <int:y>', file=stderr)
-        return read_action(prompt)
+        return read_action(minefield, prompt=prompt)
 
     return Action(action, position)
 
