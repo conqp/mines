@@ -133,9 +133,13 @@ class Minefield(list):
         for field in fields:
             field.mine = False
 
+    def is_on_field(self, position: Coordinate) -> bool:
+        """Determine whether the position is on the field."""
+        return 0 <= position.x < self.width and 0 <= position.y < self.width
+
     def field_at(self, position: Coordinate) -> Field:
         """Returns the field at the given position."""
-        if 0 <= position.x < self.width and 0 <= position.y < self.width:
+        if self.is_on_field(position):
             return self[position.y][position.x]
 
         raise OffGrid('Coordinate not on field.')
@@ -214,13 +218,15 @@ def read_action(minefield: Minefield, *,
         action, pos_x, pos_y = text.split()
         action = ActionType(action)
         position = Coordinate(int(pos_x, 16), int(pos_y, 16))
-        # Check if coordinate is on the field:
-        minefield[position]     # pylint: disable=W0104
     except ValueError:
         print('Please enter: (visit|mark) <int:x> <int:y>', file=stderr)
         return read_action(minefield, prompt=prompt)
 
-    return Action(action, position)
+    if minefield.is_on_field(position):
+        return Action(action, position)
+
+    print('Coordinate must lie on the minefield.', file=stderr)
+    return read_action(minefield, prompt=prompt)
 
 
 def get_args(description: str = __doc__) -> Namespace:
