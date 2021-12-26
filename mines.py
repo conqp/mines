@@ -60,7 +60,7 @@ class Field:
         """Returns a string representation."""
         if self.visited:
             if self.mine:
-                return '\033[1m*\033[0m'
+                return '*'
 
             return ' '
 
@@ -71,7 +71,7 @@ class Field:
             return '!' if self.mine else 'x'
 
         if self.mine and game_over:
-            return '*'
+            return 'o'
 
         return '■'
 
