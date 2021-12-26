@@ -62,16 +62,10 @@ class Field:
     def to_string(self, *, game_over: bool = False) -> str:
         """Returns a string representation."""
         if self.visited:
-            if self.mine:
-                return '*'
-
-            return ' '
+            return '*' if self.mine else ' '
 
         if self.marked:
-            if game_over:
-                return '!' if self.mine else 'x'
-
-            return '?'
+            return ('!' if self.mine else 'x') if game_over else '?'
 
         if game_over and self.mine:
             return 'o'
