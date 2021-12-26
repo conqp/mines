@@ -123,7 +123,7 @@ class Minefield(list):
     def stringify(self, field: Field, position: Coordinate, *,
                   game_over: bool = False) -> str:
         """Return a str representation of the field at the given coordiate."""
-        if field.visited and not field.mine:
+        if not field.mine and (field.visited or game_over):
             return str(self.count_surrounding_mines(position) or str(field))
 
         return str(field.to_string(game_over=game_over))
