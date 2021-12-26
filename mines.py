@@ -52,10 +52,6 @@ class Field:
     def __str__(self) -> str:
         return self.to_string()
 
-    def toggle_marked(self) -> None:
-        """Toggles the marker on this field."""
-        self.marked = not self.marked
-
     def to_string(self, *, game_over: bool = False) -> str:
         """Returns a string representation."""
         if self.visited:
@@ -75,6 +71,10 @@ class Field:
 
         return '■'
 
+    def toggle_marked(self) -> None:
+        """Toggles the marker on this field."""
+        self.marked = not self.marked
+
 
 class Minefield(list):
     """A mine field."""
@@ -89,15 +89,6 @@ class Minefield(list):
 
     def __str__(self) -> str:
         return self.to_string()
-
-    def to_string(self, *, game_over: bool = False) -> str:
-        """Returns a string representation of the minefield."""
-        return linesep.join(
-            ' '.join(
-                self.stringify(field, Coordinate(x, y), game_over=game_over)
-                for x, field in enumerate(row)
-            ) for y, row in enumerate(self)
-        )
 
     def __getitem__(self, item: Union[int, Coordinate]) -> Union[list, Field]:
         if isinstance(item, Coordinate):
@@ -172,6 +163,15 @@ class Minefield(list):
         """Checks whether all fields have been visited."""
         return all(field.visited for row in self for field in row
                    if not field.mine)
+
+    def to_string(self, *, game_over: bool = False) -> str:
+        """Returns a string representation of the minefield."""
+        return linesep.join(
+            ' '.join(
+                self.stringify(field, Coordinate(x, y), game_over=game_over)
+                for x, field in enumerate(row)
+            ) for y, row in enumerate(self)
+        )
 
 
 class ActionType(Enum):
