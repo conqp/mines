@@ -61,8 +61,11 @@ class Field:
 
     def to_string(self, *, game_over: bool = False) -> str:
         """Returns a string representation."""
-        if self.visited and self.mine:
-            return '*'
+        if self.visited:
+            if self.mine:
+                return '*'
+
+            return ' '
 
         if self.marked:
             if game_over:
@@ -127,7 +130,7 @@ class Minefield(list):
                   game_over: bool = False) -> str:
         """Return a str representation of the field at the given coordiate."""
         if field.visited and not field.mine:
-            return str(self.count_surrounding_mines(position) or ' ')
+            return str(self.count_surrounding_mines(position) or str(field))
 
         return str(field.to_string(game_over=game_over))
 
