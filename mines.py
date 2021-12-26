@@ -6,6 +6,7 @@ from argparse import ArgumentParser, Namespace
 from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
+from os import linesep
 from random import choice
 from sys import stderr
 from typing import Iterator, NamedTuple, Optional, Union
@@ -49,6 +50,14 @@ class Field:
     visited: bool = False
 
     def __str__(self) -> str:
+        return self.to_string()
+
+    def toggle_marked(self) -> None:
+        """Toggles the marker on this field."""
+        self.marked = not self.marked
+
+    def to_string(self, *, game_over: bool = False) -> str:
+        """Returns a string representation."""
         if self.visited:
             if self.mine:
                 return '☠'
@@ -56,7 +65,13 @@ class Field:
             return ' '
 
         if self.marked:
-            return '⚐'
+            if not game_over:
+                return '⚐'
+
+            return '✓' if self.mine else '✗'
+
+        if self.mine and game_over:
+            return '💣'
 
         return '■'
 
@@ -64,7 +79,7 @@ class Field:
 class Minefield(list):
     """A mine field."""
 
-    def __init__(self, width: int = 10, height: int = 10):
+    def __init__(self, width: int, height: int):
         super().__init__()
         self.width = width
         self.height = height
@@ -73,9 +88,13 @@ class Minefield(list):
             self.append([Field() for _ in range(width)])
 
     def __str__(self) -> str:
-        return '\n'.join(
+        return self.to_string()
+
+    def to_string(self, *, game_over: bool = False) -> str:
+        """Returns a string representation of the minefield."""
+        return linesep.join(
             ' '.join(
-                self.stringify(field, Coordinate(x, y))
+                self.stringify(field, Coordinate(x, y), game_over=game_over)
                 for x, field in enumerate(row)
             ) for y, row in enumerate(self)
         )
@@ -96,12 +115,13 @@ class Minefield(list):
         """Return the amount of mines surrounding the given position."""
         return sum(field.mine for field in self.get_neighbors(position))
 
-    def stringify(self, field: Field, position: Coordinate) -> str:
+    def stringify(self, field: Field, position: Coordinate, *,
+                  game_over: bool = False) -> str:
         """Return a str representation of the field at the given coordiate."""
         if field.visited and not field.mine:
             return str(self.count_surrounding_mines(position) or ' ')
 
-        return str(field)
+        return str(field.to_string(game_over=game_over))
 
     def disable_mine(self, position: Coordinate) -> None:
         """Set the field at the given position to not have a mine."""
@@ -129,9 +149,9 @@ class Minefield(list):
 
         raise OffGrid('Coordinate not on field.')
 
-    def toggle_mark(self, position: Coordinate) -> None:
+    def toggle_marked(self, position: Coordinate) -> None:
         """Toggels the marker on the given field."""
-        field.marked = not (field := self[position]).marked
+        self[position].toggle_marked()
 
     def visit(self, position: Coordinate) -> None:
         """Visit the field at the given position."""
@@ -165,6 +185,17 @@ class Action(NamedTuple):
 
     action: ActionType
     position: Coordinate
+
+
+def print_minefield(minefield: Minefield, *, game_over: bool = False) -> None:
+    """Prints the mine field with row and column markers."""
+
+    print(' |', *(f'{index} ' for index in range(minefield.width)), sep='')
+    print('-+', '-' * (minefield.width * 2 - 1), sep='')
+    lines = minefield.to_string(game_over=game_over).split(linesep)
+
+    for index, line in enumerate(lines):
+        print(f'{index}|', line, sep='')
 
 
 def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
@@ -204,7 +235,7 @@ def main() -> int:
     first_visit = True
 
     while not minefield.sweep_completed():
-        print(minefield)
+        print_minefield(minefield)
 
         try:
             action = read_action()
@@ -221,13 +252,13 @@ def main() -> int:
             try:
                 minefield.visit(action.position)
             except SteppedOnMine:
-                print(minefield)
+                print_minefield(minefield, game_over=True)
                 print('Game over.')
                 return 1
         else:
-            minefield.toggle_mark(action.position)
+            minefield.toggle_marked(action.position)
 
-    print(minefield)
+    print_minefield(minefield, game_over=True)
     print('All mines cleared. Great job.')
     return 0
 
