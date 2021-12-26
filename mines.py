@@ -11,8 +11,20 @@ from sys import exit, stderr    # pylint: disable=W0622
 from typing import Iterator, NamedTuple, Optional
 
 
-class SteppedOnMine(Exception):
+class GameOver(Exception):
+    """Indicates that the game has ended."""
+
+    def __init__(self, message: str, returncode: int):
+        super().__init__(message)
+        self.message = message
+        self.returncode = returncode
+
+
+class SteppedOnMine(GameOver):
     """Indicates that the player stepped onto a mine."""
+
+    def __init__(self):
+        super().__init__('You stepped onto a mine. :(', 1)
 
 
 class Coordinate(NamedTuple):
@@ -85,6 +97,17 @@ class Minefield(list):
     def __str__(self) -> str:
         return self.to_string()
 
+    @property
+    def uninitialized(self) -> bool:
+        """Checks whether all fields are uninitalized."""
+        return all(field.mine is None for row in self for field in row)
+
+    @property
+    def sweep_completed(self) -> bool:
+        """Checks whether all fields have been visited."""
+        return all(field.visited for row in self for field in row
+                   if not field.mine)
+
     def is_on_field(self, position: Coordinate) -> bool:
         """Determine whether the position is on the field."""
         return 0 <= position.x < self.width and 0 <= position.y < self.width
@@ -150,11 +173,6 @@ class Minefield(list):
         if self.count_surrounding_mines(position) == 0:
             for neighbor in position.neighbors:
                 self.visit(neighbor)
-
-    def sweep_completed(self) -> bool:
-        """Checks whether all fields have been visited."""
-        return all(field.visited for row in self for field in row
-                   if not field.mine)
 
     def to_string(self, *, game_over: bool = False) -> str:
         """Returns a string representation of the minefield."""
@@ -227,40 +245,52 @@ def get_args(description: str = __doc__) -> Namespace:
     return parser.parse_args()
 
 
+def visit(minefield: Minefield, position: Coordinate) -> None:
+    """Visit a field."""
+
+    minefield.visit(position)
+
+    if minefield.sweep_completed:
+        raise GameOver('All mines cleared. Great job.', 0)
+
+
+def play_round(minefield: Minefield, mines: int) -> None:
+    """Play a round."""
+
+    print_minefield(minefield)
+    action = read_action(minefield)
+
+    if action.action == ActionType.VISIT:
+        if minefield.uninitialized:
+            minefield.disable_mine(action.position)
+            minefield.populate(mines)
+
+        return visit(minefield, action.position)
+
+    return minefield.toggle_marked(action.position)
+
+
 def main() -> int:
     """Test stuff."""
 
     args = get_args()
+
+    if args.mines >= (args.width * args.height):
+        print('Too many mines for field.', file=stderr)
+        return 2
+
     minefield = Minefield(args.width, args.height)
-    first_visit = True
 
-    while not minefield.sweep_completed():
-        print_minefield(minefield)
-
+    while True:
         try:
-            action = read_action(minefield)
+            play_round(minefield, args.mines)
         except KeyboardInterrupt:
             print('\nAborted by user.')
-            return 2
-
-        if action.action == ActionType.VISIT:
-            if first_visit:
-                first_visit = False
-                minefield.disable_mine(action.position)
-                minefield.populate(args.mines)
-
-            try:
-                minefield.visit(action.position)
-            except SteppedOnMine:
-                print_minefield(minefield, game_over=True)
-                print('Game over.')
-                return 1
-        else:
-            minefield.toggle_marked(action.position)
-
-    print_minefield(minefield, game_over=True)
-    print('All mines cleared. Great job.')
-    return 0
+            return 3
+        except GameOver as game_over:
+            print(minefield.to_string(game_over=True))
+            print(game_over.message)
+            return game_over.returncode
 
 
 if __name__ == '__main__':
