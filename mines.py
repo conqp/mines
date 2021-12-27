@@ -13,6 +13,8 @@ from typing import Iterator, NamedTuple, Optional
 
 
 __all__ = [
+    'NUM_TO_STR',
+    'STR_TO_NUM',
     'GameOver',
     'SteppedOnMine',
     'Coordinate',
