@@ -106,30 +106,35 @@ class Coordinate(NamedTuple):
                 yield type(self)(self.x + delta_x, self.y + delta_y)
 
 
-class Minefield(list):
+class Minefield:
     """A mine field."""
 
-    def __init__(self, width: int, height: int):
+    def __init__(self, width: int, height: int, mines: int):
         super().__init__()
+
+        if mines >= (width * height - 1):
+            raise ValueError('Too many mines for mine field.')
+
         self.width = width
         self.height = height
-
-        for _ in range(height):
-            self.append([Cell() for _ in range(width)])
+        self.mines = mines
+        self.grid = [[Cell() for _ in range(width)] for _ in height]
 
     def __str__(self) -> str:
         return self.to_string()
 
+    def __iter__(self) -> str:
+        return (cell for row in self.grid for cell in row)
+
     @property
     def uninitialized(self) -> bool:
         """Checks whether all cells are uninitalized."""
-        return all(cell.mine is None for row in self for cell in row)
+        return all(cell.mine is None for cell in self)
 
     @property
     def sweep_completed(self) -> bool:
         """Checks whether all cells have been visited."""
-        return all(cell.visited for row in self for cell in row
-                   if not cell.mine)
+        return all(cell.visited for cell in self if not cell.mine)
 
     def is_on_field(self, position: Coordinate) -> bool:
         """Determine whether the position is on the field."""
@@ -137,7 +142,7 @@ class Minefield(list):
 
     def cell_at(self, position: Coordinate) -> Cell:
         """Returns the cell at the given position."""
-        return self[position.y][position.x]
+        return self.grid[position.y][position.x]
 
     def get_neighbors(self, position: Coordinate) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
@@ -162,14 +167,11 @@ class Minefield(list):
         """Set the cell at the given position to not have a mine."""
         self.cell_at(position).mine = False
 
-    def populate(self, mines: int) -> None:
+    def populate(self) -> None:
         """Populate the minefield with mines."""
-        cells = [cell for row in self for cell in row if cell.mine is None]
+        cells = [cell for cell in self if cell.mine is None]
 
-        if mines > len(cells):
-            raise ValueError('Too many mines for field.')
-
-        for _ in range(mines):
+        for _ in range(self.mines):
             cell = choice(cells)
             cell.mine = True
             cells.remove(cell)
@@ -177,10 +179,10 @@ class Minefield(list):
         for cell in cells:
             cell.mine = False
 
-    def initialize(self, start: Coordinate, mines: int) -> None:
+    def initialize(self, start: Coordinate) -> None:
         """Inistialize the mine field."""
         self.disable_mine(start)
-        self.populate(mines)
+        self.populate()
 
     def toggle_marked(self, position: Coordinate) -> None:
         """Toggels the marker on the given cell."""
@@ -190,6 +192,9 @@ class Minefield(list):
         """Visit the cell at the given position."""
         if not self.is_on_field(position):
             return
+
+        if self.uninitialized:
+            self.initialize(position)
 
         if (cell := self.cell_at(position)).visited:
             return
@@ -292,16 +297,13 @@ def visit(minefield: Minefield, position: Coordinate) -> None:
         raise GameOver('All mines cleared. Great job.', 0)
 
 
-def play_round(minefield: Minefield, mines: int) -> None:
+def play_round(minefield: Minefield) -> None:
     """Play a round."""
 
     print_minefield(minefield)
     action = read_action(minefield)
 
     if action.action == ActionType.VISIT:
-        if minefield.uninitialized:
-            minefield.initialize(action.position, mines)
-
         return visit(minefield, action.position)
 
     return minefield.toggle_marked(action.position)
@@ -320,11 +322,11 @@ def main() -> int:
         print('Too many mines for field.', file=stderr)
         return 2
 
-    minefield = Minefield(args.width, args.height)
+    minefield = Minefield(args.width, args.height, args.mines)
 
     while True:
         try:
-            play_round(minefield, args.mines)
+            play_round(minefield)
         except KeyboardInterrupt:
             print('\nAborted by user.')
             return 3
