@@ -31,7 +31,6 @@ __all__ = [
     'print_minefield',
     'read_action',
     'get_args',
-    'visit',
     'play_round',
     'main'
 ]
@@ -288,25 +287,19 @@ def get_args(description: str = __doc__) -> Namespace:
     return parser.parse_args()
 
 
-def visit(minefield: Minefield, position: Coordinate) -> None:
-    """Visit a field."""
-
-    minefield.visit(position)
-
-    if minefield.sweep_completed:
-        raise GameOver('All mines cleared. Great job.', 0)
-
-
 def play_round(minefield: Minefield) -> None:
     """Play a round."""
 
     print_minefield(minefield)
     action = read_action(minefield)
 
-    if action.action == ActionType.VISIT:
-        return visit(minefield, action.position)
+    if action.action == ActionType.MARK:
+        minefield.toggle_marked(action.position)
+    else:
+        minefield.visit(action.position)
 
-    return minefield.toggle_marked(action.position)
+        if minefield.sweep_completed:
+            raise GameOver('All mines cleared. Great job.', 0)
 
 
 def main() -> int:
