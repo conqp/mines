@@ -95,10 +95,6 @@ class Coordinate(NamedTuple):
     x: int
     y: int
 
-    def offset(self, delta_x: int, delta_y: int) -> Coordinate:
-        """Returns a coordinate with the given offset."""
-        return type(self)(self.x + delta_x, self.y + delta_y)
-
     @property
     def neighbors(self) -> Iterator[Coordinate]:
         """Yield fields surrounding this position."""
@@ -107,7 +103,7 @@ class Coordinate(NamedTuple):
                 if delta_x == delta_y == 0:
                     continue    # Skip the current position itself.
 
-                yield self.offset(delta_x, delta_y)
+                yield type(self)(self.x + delta_x, self.y + delta_y)
 
 
 class Minefield(list):
