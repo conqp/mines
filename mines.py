@@ -13,7 +13,7 @@ from typing import Iterator, NamedTuple, Optional
 from warnings import warn
 
 try:
-    import readline
+    import readline     # pylint: disable=W0611
 except ModuleNotFoundError:
     warn('Module "readline" is not available. Limited console functionality.')
 
