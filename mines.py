@@ -175,6 +175,11 @@ class Minefield(list):
         for cell in cells:
             cell.mine = False
 
+    def initialize(self, start: Coordinate, mines: int) -> None:
+        """Inistialize the mine field."""
+        self.disable_mine(start)
+        self.populate(mines)
+
     def toggle_marked(self, position: Coordinate) -> None:
         """Toggels the marker on the given cell."""
         self.cell_at(position).toggle_marked()
@@ -293,8 +298,7 @@ def play_round(minefield: Minefield, mines: int) -> None:
 
     if action.action == ActionType.VISIT:
         if minefield.uninitialized:
-            minefield.disable_mine(action.position)
-            minefield.populate(mines)
+            minefield.initialize(action.position, mines)
 
         return visit(minefield, action.position)
 
