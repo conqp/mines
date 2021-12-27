@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 from argparse import ArgumentParser, Namespace
+from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from itertools import filterfalse
@@ -61,7 +62,7 @@ class Cell:
     marked: bool = False
     visited: bool = False
 
-    def to_string(self, game_over: bool) -> str:
+    def to_string(self, *, game_over: bool = False) -> str:
         """Returns a string representation."""
         if self.visited:
             return '*' if self.mine else ' '
@@ -115,6 +116,9 @@ class Minefield:
     def __init__(self, width: int, height: int, mines: int):
         super().__init__()
 
+        if width > (maxsize := len(NUM_TO_STR)) or height > maxsize:
+            raise ValueError(f'Max field width and height are {maxsize}.')
+
         if mines >= (width * height - 1):
             raise ValueError('Too many mines for mine field.')
 
@@ -143,9 +147,12 @@ class Minefield:
         """Yield lines of the str representation."""
         yield from self.header
 
-        for index, row in enumerate(self.grid):
-            prefix = NUM_TO_STR[index]
-            row = ' '.join(cell.to_string(self.game_over) for cell in row)
+        for pos_y, row in enumerate(self.grid):
+            prefix = NUM_TO_STR[pos_y]
+            row = ' '.join(
+                self.stringify(cell, pos_x, pos_y)
+                for pos_x, cell in enumerate(row)
+            )
             yield f'{prefix}|{row}'
 
     @property
@@ -160,28 +167,27 @@ class Minefield:
     def cell_at(self, position: Coordinate) -> Cell:
         """Returns the cell at the given position."""
         if not self.is_on_field(position):
-            raise NotOnField()
+            raise NotOnField(position)
 
         return self.grid[position.y][position.x]
 
     def get_neighbors(self, position: Coordinate) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
         for neighbor in position.neighbors:
-            if self.is_on_field(neighbor):
+            with suppress(NotOnField):
                 yield self.cell_at(neighbor)
 
     def count_surrounding_mines(self, position: Coordinate) -> int:
         """Return the amount of mines surrounding the given position."""
         return sum(cell.mine for cell in self.get_neighbors(position))
 
-    def stringify(self, cell: Cell, position: Coordinate, *,
-                  game_over: bool = False) -> str:
+    def stringify(self, cell: Cell, pos_x: int, pos_y: int) -> str:
         """Return a str representation of the cell at the given coordiate."""
-        if not cell.mine and (cell.visited or game_over):
-            if mines := self.count_surrounding_mines(position):
+        if not cell.mine and (cell.visited or self.game_over):
+            if mines := self.count_surrounding_mines(Coordinate(pos_x, pos_y)):
                 return str(mines)
 
-        return cell.to_string(game_over=game_over)
+        return cell.to_string(game_over=self.game_over)
 
     def disable_mine(self, position: Coordinate) -> None:
         """Set the cell at the given position to not have a mine."""
@@ -208,20 +214,8 @@ class Minefield:
         """Toggels the marker on the given cell."""
         self.cell_at(position).toggle_marked()
 
-    def check_sweep_completed(self) -> None:
-        """Checks whether all cells have been visited."""
-        if all(cell.visited for cell in self if not cell.mine):
-            self.game_over = GameOver('All mines cleared. Great job.', 0)
-            raise self.game_over
-
-    def visit(self, position: Coordinate, *, check: bool = True) -> None:
-        """Visit the cell at the given position."""
-        if self.game_over:
-            raise self.game_over
-
-        if self.uninitialized:
-            self.initialize(position)
-
+    def _visit(self, position) -> None:
+        """Visits the respective position."""
         if (cell := self.cell_at(position)).visited or cell.marked:
             return
 
@@ -229,14 +223,26 @@ class Minefield:
 
         if cell.mine:
             self.game_over = GameOver('You stepped onto a mine. :(', 1)
-            raise self.game_over
+        elif all(cell.visited for cell in self if not cell.mine):
+            self.game_over = GameOver('All mines cleared. Great job.', 0)
 
         if self.count_surrounding_mines(position) == 0:
             for neighbor in position.neighbors:
-                self.visit(neighbor, check=False)
+                with suppress(NotOnField):
+                    self._visit(neighbor)
 
-        if check:
-            self.check_sweep_completed()
+    def visit(self, position: Coordinate) -> None:
+        """Visit the cell at the given position."""
+        if self.game_over:
+            raise self.game_over
+
+        if self.uninitialized:
+            self.initialize(position)
+
+        self._visit(position)
+
+        if self.game_over:
+            raise self.game_over
 
 
 class ActionType(Enum):
@@ -253,11 +259,6 @@ class Action(NamedTuple):
     position: Coordinate
 
     @classmethod
-    def from_string(cls, text: str) -> Action:
-        """Parses an action from a string."""
-        return cls.from_items(text.split())
-
-    @classmethod
     def from_items(cls, items: list[str]) -> Action:
         """Creates an action from a list of strings."""
         position = Coordinate.from_strings(filter(str.isdigit, items))
@@ -271,12 +272,17 @@ class Action(NamedTuple):
             raise ValueError('Must specify exactly one command.')
 
         if 'mark'.startswith(action := action.casefold()):
-            return cls(ActionType.VISIT, position)
+            return cls(ActionType.MARK, position)
 
-        if 'visit'.startswith(action := action.casefold()):
+        if 'visit'.startswith(action):
             return cls(ActionType.VISIT, position)
 
         raise ValueError('Action not recognized:', action)
+
+    @classmethod
+    def from_string(cls, text: str) -> Action:
+        """Parses an action from a string."""
+        return cls.from_items(text.strip().split())
 
 
 def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
@@ -309,8 +315,9 @@ def play_round(minefield: Minefield) -> None:
     """Play a round."""
 
     print(minefield)
+    action = read_action()
 
-    if (action := read_action()).action == ActionType.MARK:
+    if action.action == ActionType.MARK:
         minefield.toggle_marked(action.position)
     else:
         minefield.visit(action.position)
@@ -321,21 +328,17 @@ def main() -> int:
 
     args = get_args()
 
-    if args.width > (maxsize := len(NUM_TO_STR)) or args.height > maxsize:
-        print(f'Max field width and height are {maxsize}.', file=stderr)
+    try:
+        minefield = Minefield(args.width, args.height, args.mines)
+    except ValueError as error:
+        print(error, file=stderr)
         return 2
-
-    if args.mines >= (args.width * args.height):
-        print('Too many mines for field.', file=stderr)
-        return 2
-
-    minefield = Minefield(args.width, args.height, args.mines)
 
     while True:
         try:
             play_round(minefield)
-        except NotOnField:
-            print('Coordinate must lie on the minefield.', file=stderr)
+        except NotOnField as err:
+            print(f'Coordinate must lie on the minefield: {err}', file=stderr)
         except KeyboardInterrupt:
             print('\nAborted by user.')
             return 3
