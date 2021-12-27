@@ -12,6 +12,23 @@ from sys import exit, stderr    # pylint: disable=W0622
 from typing import Iterator, NamedTuple, Optional
 
 
+__all__ = [
+    'GameOver',
+    'SteppedOnMine',
+    'Coordinate',
+    'Field',
+    'Minefield',
+    'ActionType',
+    'Action',
+    'print_minefield',
+    'read_action',
+    'get_args',
+    'visit',
+    'play_round',
+    'main'
+]
+
+
 NUM_TO_STR = dict(enumerate(digits + ascii_lowercase))
 STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
 
