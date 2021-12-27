@@ -248,11 +248,13 @@ def read_action(minefield: Minefield, *,
     try:
         action, pos_x, pos_y = text.split()
         action = ActionType(action)
-        position = Coordinate(STR_TO_NUM[pos_x], STR_TO_NUM[pos_y])
     except ValueError:
         print('Please enter: (visit|mark) <x> <y>', file=stderr)
         return read_action(minefield, prompt=prompt)
-    except IndexError:
+
+    try:
+        position = Coordinate(STR_TO_NUM[pos_x], STR_TO_NUM[pos_y])
+    except KeyError:
         print('Coordinates are out of range.', file=stderr)
         return read_action(minefield, prompt=prompt)
 
