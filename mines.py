@@ -243,6 +243,7 @@ def read_action(minefield: Minefield, *,
     try:
         text = input(prompt)
     except EOFError:
+        print()
         return read_action(minefield, prompt=prompt)
 
     try:
