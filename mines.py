@@ -17,8 +17,8 @@ __all__ = [
     'STR_TO_NUM',
     'GameOver',
     'SteppedOnMine',
+    'Cell',
     'Coordinate',
-    'Field',
     'Minefield',
     'ActionType',
     'Action',
@@ -51,30 +51,9 @@ class SteppedOnMine(GameOver):
         super().__init__('You stepped onto a mine. :(', 1)
 
 
-class Coordinate(NamedTuple):
-    """A 2D coordinate on a grid."""
-
-    x: int
-    y: int
-
-    def offset(self, delta_x: int, delta_y: int) -> Coordinate:
-        """Returns a coordinate with the given offset."""
-        return type(self)(self.x + delta_x, self.y + delta_y)
-
-    @property
-    def neighbors(self) -> Iterator[Coordinate]:
-        """Yield fields surrounding this position."""
-        for delta_y in range(-1, 2):
-            for delta_x in range(-1, 2):
-                if delta_x == delta_y == 0:
-                    continue    # Skip the current position itself.
-
-                yield self.offset(delta_x, delta_y)
-
-
 @dataclass
-class Field:
-    """A field of a minefield."""
+class Cell:
+    """A cell of a minefield."""
 
     mine: Optional[bool] = None
     marked: bool = False
@@ -104,6 +83,27 @@ class Field:
         self.marked = not self.marked
 
 
+class Coordinate(NamedTuple):
+    """A 2D coordinate on a grid."""
+
+    x: int
+    y: int
+
+    def offset(self, delta_x: int, delta_y: int) -> Coordinate:
+        """Returns a coordinate with the given offset."""
+        return type(self)(self.x + delta_x, self.y + delta_y)
+
+    @property
+    def neighbors(self) -> Iterator[Coordinate]:
+        """Yield fields surrounding this position."""
+        for delta_y in range(-1, 2):
+            for delta_x in range(-1, 2):
+                if delta_x == delta_y == 0:
+                    continue    # Skip the current position itself.
+
+                yield self.offset(delta_x, delta_y)
+
+
 class Minefield(list):
     """A mine field."""
 
@@ -113,86 +113,86 @@ class Minefield(list):
         self.height = height
 
         for _ in range(height):
-            self.append([Field() for _ in range(width)])
+            self.append([Cell() for _ in range(width)])
 
     def __str__(self) -> str:
         return self.to_string()
 
     @property
     def uninitialized(self) -> bool:
-        """Checks whether all fields are uninitalized."""
-        return all(field.mine is None for row in self for field in row)
+        """Checks whether all cells are uninitalized."""
+        return all(cell.mine is None for row in self for cell in row)
 
     @property
     def sweep_completed(self) -> bool:
-        """Checks whether all fields have been visited."""
-        return all(field.visited for row in self for field in row
-                   if not field.mine)
+        """Checks whether all cells have been visited."""
+        return all(cell.visited for row in self for cell in row
+                   if not cell.mine)
 
     def is_on_field(self, position: Coordinate) -> bool:
         """Determine whether the position is on the field."""
         return 0 <= position.x < self.width and 0 <= position.y < self.height
 
-    def field_at(self, position: Coordinate) -> Field:
-        """Returns the field at the given position."""
+    def cell_at(self, position: Coordinate) -> Cell:
+        """Returns the cell at the given position."""
         return self[position.y][position.x]
 
-    def get_neighbors(self, position: Coordinate) -> Iterator[Field]:
-        """Yield fields surrounding the given position."""
+    def get_neighbors(self, position: Coordinate) -> Iterator[Cell]:
+        """Yield cells surrounding the given position."""
         for neighbor in position.neighbors:
             if self.is_on_field(neighbor):
-                yield self.field_at(neighbor)
+                yield self.cell_at(neighbor)
 
     def count_surrounding_mines(self, position: Coordinate) -> int:
         """Return the amount of mines surrounding the given position."""
-        return sum(field.mine for field in self.get_neighbors(position))
+        return sum(cell.mine for cell in self.get_neighbors(position))
 
-    def stringify(self, field: Field, position: Coordinate, *,
+    def stringify(self, cell: Cell, position: Coordinate, *,
                   game_over: bool = False) -> str:
-        """Return a str representation of the field at the given coordiate."""
-        if not field.mine and (field.visited or game_over):
+        """Return a str representation of the cell at the given coordiate."""
+        if not cell.mine and (cell.visited or game_over):
             if mines := self.count_surrounding_mines(position):
                 return str(mines)
 
-        return str(field.to_string(game_over=game_over))
+        return str(cell.to_string(game_over=game_over))
 
     def disable_mine(self, position: Coordinate) -> None:
-        """Set the field at the given position to not have a mine."""
-        self.field_at(position).mine = False
+        """Set the cell at the given position to not have a mine."""
+        self.cell_at(position).mine = False
 
     def populate(self, mines: int) -> None:
-        """Populate the mine field with mines."""
-        fields = [field for row in self for field in row if field.mine is None]
+        """Populate the minefield with mines."""
+        cells = [cell for row in self for cell in row if cell.mine is None]
 
-        if mines > len(fields):
+        if mines > len(cells):
             raise ValueError('Too many mines for field.')
 
         for _ in range(mines):
-            field = choice(fields)
-            field.mine = True
-            fields.remove(field)
+            cell = choice(cells)
+            cell.mine = True
+            cells.remove(cell)
 
-        for field in fields:
-            field.mine = False
+        for cell in cells:
+            cell.mine = False
 
     def toggle_marked(self, position: Coordinate) -> None:
-        """Toggels the marker on the given field."""
-        self.field_at(position).toggle_marked()
+        """Toggels the marker on the given cell."""
+        self.cell_at(position).toggle_marked()
 
     def visit(self, position: Coordinate) -> None:
-        """Visit the field at the given position."""
+        """Visit the cell at the given position."""
         if not self.is_on_field(position):
             return
 
-        if (field := self.field_at(position)).visited:
+        if (cell := self.cell_at(position)).visited:
             return
 
-        if field.marked:
+        if cell.marked:
             return
 
-        field.visited = True
+        cell.visited = True
 
-        if field.mine:
+        if cell.mine:
             raise SteppedOnMine()
 
         if self.count_surrounding_mines(position) == 0:
@@ -203,8 +203,8 @@ class Minefield(list):
         """Returns a string representation of the minefield."""
         return linesep.join(
             ' '.join(
-                self.stringify(field, Coordinate(x, y), game_over=game_over)
-                for x, field in enumerate(row)
+                self.stringify(cell, Coordinate(x, y), game_over=game_over)
+                for x, cell in enumerate(row)
             ) for y, row in enumerate(self)
         )
 
