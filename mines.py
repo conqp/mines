@@ -5,6 +5,7 @@ from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
 from enum import Enum
+from itertools import filterfalse
 from os import linesep
 from random import choice
 from string import digits, ascii_lowercase
@@ -22,7 +23,7 @@ __all__ = [
     'NUM_TO_STR',
     'STR_TO_NUM',
     'GameOver',
-    'SteppedOnMine',
+    'NotOnField',
     'Cell',
     'Coordinate',
     'Minefield',
@@ -48,11 +49,8 @@ class GameOver(Exception):
         self.returncode = returncode
 
 
-class SteppedOnMine(GameOver):
-    """Indicates that the player stepped onto a mine."""
-
-    def __init__(self):
-        super().__init__('You stepped onto a mine. :(', 1)
+class NotOnField(Exception):
+    """Indicates that a given coodinate does not lie on the minefield."""
 
 
 @dataclass
@@ -89,6 +87,16 @@ class Coordinate(NamedTuple):
 
     x: int
     y: int
+
+    @classmethod
+    def from_strings(cls, strings: Iterator[str]) -> Coordinate:
+        """Creates a coordinate from a set of strings."""
+        try:
+            return cls(*map(lambda pos: STR_TO_NUM[pos], strings))
+        except KeyError as error:
+            raise ValueError(f'Invalid coordinate value: {error}') from None
+        except TypeError:
+            raise ValueError('Expect two coordinates: x and y') from None
 
     @property
     def neighbors(self) -> Iterator[Coordinate]:
@@ -151,6 +159,9 @@ class Minefield:
 
     def cell_at(self, position: Coordinate) -> Cell:
         """Returns the cell at the given position."""
+        if not self.is_on_field(position):
+            raise NotOnField()
+
         return self.grid[position.y][position.x]
 
     def get_neighbors(self, position: Coordinate) -> Iterator[Cell]:
@@ -208,9 +219,6 @@ class Minefield:
         if self.game_over:
             raise self.game_over
 
-        if not self.is_on_field(position):
-            return
-
         if self.uninitialized:
             self.initialize(position)
 
@@ -220,7 +228,7 @@ class Minefield:
         cell.visited = True
 
         if cell.mine:
-            self.game_over = SteppedOnMine()
+            self.game_over = GameOver('You stepped onto a mine. :(', 1)
             raise self.game_over
 
         if self.count_surrounding_mines(position) == 0:
@@ -244,36 +252,47 @@ class Action(NamedTuple):
     action: ActionType
     position: Coordinate
 
+    @classmethod
+    def from_string(cls, text: str) -> Action:
+        """Parses an action from a string."""
+        return cls.from_items(text.split())
 
-def read_action(minefield: Minefield, *,
-                prompt: str = 'Enter action and coordinate: '
-                ) -> Action:
+    @classmethod
+    def from_items(cls, items: list[str]) -> Action:
+        """Creates an action from a list of strings."""
+        position = Coordinate.from_strings(filter(str.isdigit, items))
+
+        try:
+            action, *excess = filterfalse(str.isdigit, items)
+        except ValueError:
+            return cls(ActionType.VISIT, position)
+
+        if excess:
+            raise ValueError('Must specify exactly one command.')
+
+        if 'mark'.startswith(action := action.casefold()):
+            return cls(ActionType.VISIT, position)
+
+        if 'visit'.startswith(action := action.casefold()):
+            return cls(ActionType.VISIT, position)
+
+        raise ValueError('Action not recognized:', action)
+
+
+def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
     """Reads an Action."""
 
-    try:
-        text = input(prompt)
-    except EOFError:
-        print()
-        return read_action(minefield, prompt=prompt)
+    while True:
+        try:
+            text = input(prompt)
+        except EOFError:
+            print()
 
-    try:
-        action, pos_x, pos_y = text.split()
-        action = ActionType(action)
-    except ValueError:
-        print('Please enter: (visit|mark) <x> <y>', file=stderr)
-        return read_action(minefield, prompt=prompt)
-
-    try:
-        position = Coordinate(STR_TO_NUM[pos_x], STR_TO_NUM[pos_y])
-    except KeyError:
-        print('Invalid coordinates.', file=stderr)
-        return read_action(minefield, prompt=prompt)
-
-    if minefield.is_on_field(position):
-        return Action(action, position)
-
-    print('Coordinate must lie on the minefield.', file=stderr)
-    return read_action(minefield, prompt=prompt)
+        try:
+            return Action.from_string(text)
+        except ValueError as error:
+            print(error)
+            continue
 
 
 def get_args(description: str = __doc__) -> Namespace:
@@ -290,9 +309,8 @@ def play_round(minefield: Minefield) -> None:
     """Play a round."""
 
     print(minefield)
-    action = read_action(minefield)
 
-    if action.action == ActionType.MARK:
+    if (action := read_action()).action == ActionType.MARK:
         minefield.toggle_marked(action.position)
     else:
         minefield.visit(action.position)
@@ -316,6 +334,8 @@ def main() -> int:
     while True:
         try:
             play_round(minefield)
+        except NotOnField:
+            print('Coordinate must lie on the minefield.', file=stderr)
         except KeyboardInterrupt:
             print('\nAborted by user.')
             return 3
