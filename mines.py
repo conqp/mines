@@ -113,7 +113,7 @@ class Minefield:
         self.width = width
         self.height = height
         self.mines = mines
-        self.grid = [[Cell() for _ in range(width)] for _ in height]
+        self.grid = [[Cell() for _ in range(width)] for _ in range(height)]
         self.game_over = None
 
     def __str__(self) -> str:
