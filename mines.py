@@ -12,7 +12,7 @@ from sys import exit, stderr    # pylint: disable=W0622
 from typing import Iterator, NamedTuple, Optional
 
 
-NUM_TO_STR = dict(zip(range(37), digits + ascii_lowercase))
+NUM_TO_STR = dict(enumerate(digits + ascii_lowercase))
 STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
 
 
