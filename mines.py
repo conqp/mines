@@ -216,7 +216,12 @@ class Minefield:
 
     def _visit(self, position) -> None:
         """Visits the respective position."""
-        if (cell := self.cell_at(position)).visited or cell.marked:
+        try:
+            cell = self.cell_at(position)
+        except NotOnField:
+            return
+
+        if cell.visited or cell.marked:
             return
 
         cell.visited = True
@@ -228,8 +233,7 @@ class Minefield:
 
         if self.count_surrounding_mines(position) == 0:
             for neighbor in position.neighbors:
-                with suppress(NotOnField):
-                    self._visit(neighbor)
+                self._visit(neighbor)
 
     def visit(self, position: Coordinate) -> None:
         """Visit the cell at the given position."""
