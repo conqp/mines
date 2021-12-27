@@ -10,6 +10,12 @@ from random import choice
 from string import digits, ascii_lowercase
 from sys import exit, stderr    # pylint: disable=W0622
 from typing import Iterator, NamedTuple, Optional
+from warnings import warn
+
+try:
+    import readline
+except ModuleNotFoundError:
+    warn('Modile "readline" is not available. Limited console functionality.')
 
 
 __all__ = [
