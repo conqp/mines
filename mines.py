@@ -28,7 +28,6 @@ __all__ = [
     'Minefield',
     'ActionType',
     'Action',
-    'print_minefield',
     'read_action',
     'get_args',
     'play_round',
@@ -64,10 +63,7 @@ class Cell:
     marked: bool = False
     visited: bool = False
 
-    def __str__(self) -> str:
-        return self.to_string()
-
-    def to_string(self, *, game_over: bool = False) -> str:
+    def to_string(self, game_over: bool) -> str:
         """Returns a string representation."""
         if self.visited:
             return '*' if self.mine else ' '
@@ -118,22 +114,36 @@ class Minefield:
         self.height = height
         self.mines = mines
         self.grid = [[Cell() for _ in range(width)] for _ in height]
+        self.game_over = None
 
     def __str__(self) -> str:
-        return self.to_string()
+        """Returns a string representation of the minefield."""
+        return linesep.join(self.lines)
 
     def __iter__(self) -> str:
         return (cell for row in self.grid for cell in row)
 
     @property
+    def header(self) -> Iterator[str]:
+        """Returns the table header."""
+        row = ' '.join(NUM_TO_STR[index] for index in range(self.width))
+        yield f' |{row}'
+        yield '-+' + '-' * (self.width * 2 - 1)
+
+    @property
+    def lines(self) -> Iterator[str]:
+        """Yield lines of the str representation."""
+        yield from self.header
+
+        for index, row in enumerate(self.grid):
+            prefix = NUM_TO_STR[index]
+            row = ' '.join(cell.to_string(self.game_over) for cell in row)
+            yield f'{prefix}|{row}'
+
+    @property
     def uninitialized(self) -> bool:
         """Checks whether all cells are uninitalized."""
         return all(cell.mine is None for cell in self)
-
-    @property
-    def sweep_completed(self) -> bool:
-        """Checks whether all cells have been visited."""
-        return all(cell.visited for cell in self if not cell.mine)
 
     def is_on_field(self, position: Coordinate) -> bool:
         """Determine whether the position is on the field."""
@@ -187,37 +197,38 @@ class Minefield:
         """Toggels the marker on the given cell."""
         self.cell_at(position).toggle_marked()
 
-    def visit(self, position: Coordinate) -> None:
+    def check_sweep_completed(self) -> None:
+        """Checks whether all cells have been visited."""
+        if all(cell.visited for cell in self if not cell.mine):
+            self.game_over = GameOver('All mines cleared. Great job.', 0)
+            raise self.game_over
+
+    def visit(self, position: Coordinate, *, check: bool = True) -> None:
         """Visit the cell at the given position."""
+        if self.game_over:
+            raise self.game_over
+
         if not self.is_on_field(position):
             return
 
         if self.uninitialized:
             self.initialize(position)
 
-        if (cell := self.cell_at(position)).visited:
-            return
-
-        if cell.marked:
+        if (cell := self.cell_at(position)).visited or cell.marked:
             return
 
         cell.visited = True
 
         if cell.mine:
-            raise SteppedOnMine()
+            self.game_over = SteppedOnMine()
+            raise self.game_over
 
         if self.count_surrounding_mines(position) == 0:
             for neighbor in position.neighbors:
-                self.visit(neighbor)
+                self.visit(neighbor, check=False)
 
-    def to_string(self, *, game_over: bool = False) -> str:
-        """Returns a string representation of the minefield."""
-        return linesep.join(
-            ' '.join(
-                self.stringify(cell, Coordinate(x, y), game_over=game_over)
-                for x, cell in enumerate(row)
-            ) for y, row in enumerate(self)
-        )
+        if check:
+            self.check_sweep_completed()
 
 
 class ActionType(Enum):
@@ -232,18 +243,6 @@ class Action(NamedTuple):
 
     action: ActionType
     position: Coordinate
-
-
-def print_minefield(minefield: Minefield, *, game_over: bool = False) -> None:
-    """Prints the mine field with row and column markers."""
-
-    print(' |', *(f'{NUM_TO_STR[index]} ' for index in range(minefield.width)),
-          sep='')
-    print('-+', '-' * (minefield.width * 2 - 1), sep='')
-    lines = minefield.to_string(game_over=game_over).split(linesep)
-
-    for index, line in enumerate(lines):
-        print(f'{NUM_TO_STR[index]}|', line, sep='')
 
 
 def read_action(minefield: Minefield, *,
@@ -290,16 +289,13 @@ def get_args(description: str = __doc__) -> Namespace:
 def play_round(minefield: Minefield) -> None:
     """Play a round."""
 
-    print_minefield(minefield)
+    print(minefield)
     action = read_action(minefield)
 
     if action.action == ActionType.MARK:
         minefield.toggle_marked(action.position)
     else:
         minefield.visit(action.position)
-
-        if minefield.sweep_completed:
-            raise GameOver('All mines cleared. Great job.', 0)
 
 
 def main() -> int:
@@ -324,7 +320,7 @@ def main() -> int:
             print('\nAborted by user.')
             return 3
         except GameOver as game_over:
-            print_minefield(minefield, game_over=True)
+            print(minefield)
             print(game_over.message)
             return game_over.returncode
 
