@@ -267,8 +267,8 @@ def get_args(description: str = __doc__) -> Namespace:
     """Parses the command line arguments."""
 
     parser = ArgumentParser(description=description)
-    parser.add_argument('--width', type=int, default=8)
-    parser.add_argument('--height', type=int, default=8)
+    parser.add_argument('--width', type=int, metavar='x', default=8)
+    parser.add_argument('--height', type=int, metavar='y', default=8)
     parser.add_argument('--mines', type=int, metavar='n', default=10)
     return parser.parse_args()
 
