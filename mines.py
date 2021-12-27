@@ -15,7 +15,7 @@ from warnings import warn
 try:
     import readline
 except ModuleNotFoundError:
-    warn('Modile "readline" is not available. Limited console functionality.')
+    warn('Module "readline" is not available. Limited console functionality.')
 
 
 __all__ = [
