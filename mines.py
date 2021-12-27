@@ -277,7 +277,7 @@ class Action(NamedTuple):
         if 'visit'.startswith(action):
             return cls(ActionType.VISIT, position)
 
-        raise ValueError('Action not recognized:', action)
+        raise ValueError(f'Action not recognized: {action}')
 
     @classmethod
     def from_string(cls, text: str) -> Action:
