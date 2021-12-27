@@ -255,7 +255,7 @@ def read_action(minefield: Minefield, *,
     try:
         position = Coordinate(STR_TO_NUM[pos_x], STR_TO_NUM[pos_y])
     except KeyError:
-        print('Coordinates are out of range.', file=stderr)
+        print('Invalid coordinates.', file=stderr)
         return read_action(minefield, prompt=prompt)
 
     if minefield.is_on_field(position):
