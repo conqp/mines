@@ -154,7 +154,7 @@ class Minefield(list):
             if mines := self.count_surrounding_mines(position):
                 return str(mines)
 
-        return str(cell.to_string(game_over=game_over))
+        return cell.to_string(game_over=game_over)
 
     def disable_mine(self, position: Coordinate) -> None:
         """Set the cell at the given position to not have a mine."""
