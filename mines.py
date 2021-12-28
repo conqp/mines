@@ -89,7 +89,7 @@ class Cell:
 
         return ' ' if game_over else '■'
 
-    def toggle_marked(self) -> None:
+    def toggle_marker(self) -> None:
         """Toggles the marker on this field."""
         if self.visited:
             return
@@ -136,115 +136,97 @@ class Minefield:
         if mines >= (width * height - 1):
             raise ValueError('Too many mines for mine field.')
 
-        self.width = width
-        self.height = height
-        self.mines = mines
-        self.grid = [[Cell() for _ in range(width)] for _ in range(height)]
-        self.game_over = None
+        self._width = width
+        self._height = height
+        self._mines = mines
+        self._grid = [[Cell() for _ in range(width)] for _ in range(height)]
+        self._game_over = None
 
     def __str__(self) -> str:
         """Returns a string representation of the minefield."""
-        return linesep.join(self.lines)
+        return linesep.join(self._lines)
 
     def __iter__(self) -> str:
-        return (cell for row in self.grid for cell in row)
+        return (cell for row in self._grid for cell in row)
 
     def __contains__(self, item: Union[Cell, Coordinate]) -> bool:
         if isinstance(item, Cell):
             return any(cell is item for cell in self)
 
         if isinstance(item, Coordinate):
-            return 0 <= item.x < self.width and 0 <= item.y < self.height
+            return 0 <= item.x < self._width and 0 <= item.y < self._height
 
         return NotImplemented
 
     def __getitem__(self, position: Coordinate) -> Cell:
         """Returns the cell at the given position."""
         if position in self:
-            return self.grid[position.y][position.x]
+            return self._grid[position.y][position.x]
 
         raise IndexError(position)
 
     @property
-    def header(self) -> Iterator[str]:
+    def _header(self) -> Iterator[str]:
         """Returns the table header."""
-        row = ' '.join(NUM_TO_STR[index] for index in range(self.width))
+        row = ' '.join(NUM_TO_STR[index] for index in range(self._width))
         yield f' |{row}'
-        yield '-+' + '-' * (self.width * 2 - 1)
+        yield '-+' + '-' * (self._width * 2 - 1)
 
     @property
-    def lines(self) -> Iterator[str]:
+    def _lines(self) -> Iterator[str]:
         """Yield lines of the str representation."""
-        yield from self.header
+        yield from self._header
 
-        for pos_y, row in enumerate(self.grid):
+        for pos_y, row in enumerate(self._grid):
             prefix = NUM_TO_STR[pos_y]
             row = ' '.join(
-                self.stringify(cell, pos_x, pos_y)
+                self._stringify(cell, pos_x, pos_y)
                 for pos_x, cell in enumerate(row)
             )
             yield f'{prefix}|{row}'
 
     @property
-    def uninitialized(self) -> bool:
+    def _uninitialized(self) -> bool:
         """Checks whether all cells are uninitalized."""
         return all(cell.mine is None for cell in self)
 
-    def get(self, position: Coordinate) -> Optional[Cell]:
-        """Returns the cell at the given coordinate,
-        if is on the minefield or else None.
-        """
-        return self.grid[position.y][position.x] if position in self else None
-
-    def get_neighbors(self, position: Coordinate) -> Iterator[Cell]:
+    def _neighbors(self, position: Coordinate) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
         for neighbor in position.neighbors:
             if (cell := self.get(neighbor)):
                 yield cell
 
-    def get_unvisited_neighbors(self, position: Coordinate) \
+    def _unvisited_neighbors(self, position: Coordinate) \
             -> Iterator[tuple[Coordinate, Cell]]:
         """Yield coordinate / cells tuples of cells that are unvisited."""
         for neighbor in position.neighbors:
             if (cell := self.get(neighbor)) and not cell.visited:
                 yield (neighbor, cell)
 
-    def count_surrounding_mines(self, position: Coordinate) -> int:
+    def _surrounding_mines(self, position: Coordinate) -> int:
         """Return the amount of mines surrounding the given position."""
-        return sum(cell.mine for cell in self.get_neighbors(position))
+        return sum(cell.mine for cell in self._neighbors(position))
 
-    def stringify(self, cell: Cell, pos_x: int, pos_y: int) -> str:
+    def _stringify(self, cell: Cell, pos_x: int, pos_y: int) -> str:
         """Return a str representation of the cell at the given coordiate."""
-        if not cell.mine and (cell.visited or self.game_over):
-            if mines := self.count_surrounding_mines(Coordinate(pos_x, pos_y)):
+        if not cell.mine and (cell.visited or self._game_over):
+            if mines := self._surrounding_mines(Coordinate(pos_x, pos_y)):
                 return str(mines)
 
-        return cell.to_string(game_over=self.game_over)
+        return cell.to_string(game_over=self._game_over)
 
-    def disable_mine(self, position: Coordinate) -> None:
-        """Set the cell at the given position to not have a mine."""
+    def _initialize(self, position: Coordinate) -> None:
+        """Inistialize the mine field."""
         self[position].mine = False
-
-    def populate(self) -> None:
-        """Populate the minefield with mines."""
         cells = [cell for cell in self if cell.mine is None]
 
-        for _ in range(self.mines):
+        for _ in range(self._mines):
             cell = choice(cells)
             cell.mine = True
             cells.remove(cell)
 
         for cell in cells:
             cell.mine = False
-
-    def initialize(self, start: Coordinate) -> None:
-        """Inistialize the mine field."""
-        self.disable_mine(start)
-        self.populate()
-
-    def toggle_marked(self, position: Coordinate) -> None:
-        """Toggels the marker on the given cell."""
-        self[position].toggle_marked()
 
     def _visit_cell(self, cell: Cell) -> None:
         """Visits the given cell."""
@@ -254,33 +236,43 @@ class Minefield:
         cell.visited = True
 
         if cell.mine:
-            self.game_over = GameOver.LOST
+            self._game_over = GameOver.LOST
         elif all(cell.visited for cell in self if not cell.mine):
-            self.game_over = GameOver.WON
+            self._game_over = GameOver.WON
 
     def _visit_neighbors(self, position: Coordinate) -> None:
         """Visits the neighbors of the given position."""
-        unvisited = dict(self.get_unvisited_neighbors(position))
+        unvisited = dict(self._unvisited_neighbors(position))
 
         while unvisited:
             position, cell = unvisited.popitem()
             self._visit_cell(cell)
 
-            if self.count_surrounding_mines(position) == 0:
-                unvisited.update(dict(self.get_unvisited_neighbors(position)))
+            if self._surrounding_mines(position) == 0:
+                unvisited.update(dict(self._unvisited_neighbors(position)))
+
+    def get(self, position: Coordinate) -> Optional[Cell]:
+        """Returns the cell at the given coordinate,
+        if is on the minefield or else None.
+        """
+        return self._grid[position.y][position.x] if position in self else None
+
+    def toggle_marker(self, position: Coordinate) -> None:
+        """Toggels the marker on the given cell."""
+        self[position].toggle_marker()
 
     def visit(self, position: Coordinate) -> None:
         """Visit the cell at the given position."""
-        if self.uninitialized:
-            self.initialize(position)
+        if self._uninitialized:
+            self._initialize(position)
 
         self._visit_cell(self[position])
 
-        if self.count_surrounding_mines(position) == 0:
+        if self._surrounding_mines(position) == 0:
             self._visit_neighbors(position)
 
-        if self.game_over:
-            raise self.game_over
+        if self._game_over:
+            raise self._game_over
 
 
 class ActionType(Enum):
@@ -356,7 +348,7 @@ def play_round(minefield: Minefield) -> None:
     action = read_action()
 
     if action.action == ActionType.MARK:
-        minefield.toggle_marked(action.position)
+        minefield.toggle_marker(action.position)
     else:
         minefield.visit(action.position)
 
