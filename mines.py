@@ -295,11 +295,11 @@ class Action(NamedTuple):
         if excess:
             raise ValueError('Must specify exactly one command.')
 
-        if 'mark'.startswith(action := action.casefold()):
-            return cls(ActionType.MARK, position)
-
-        if 'visit'.startswith(action):
+        if 'visit'.startswith(action := action.casefold()):
             return cls(ActionType.VISIT, position)
+
+        if 'mark'.startswith(action):
+            return cls(ActionType.MARK, position)
 
         raise ValueError(f'Action not recognized: {action}')
 
