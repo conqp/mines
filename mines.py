@@ -132,7 +132,7 @@ class Minefield:
         if mines < 0:
             raise ValueError('Amount of mines cannot be negative.')
 
-        if mines >= (width * height - 1):
+        if mines >= width * height:
             raise ValueError('Too many mines for mine field.')
 
         self._mines = mines
