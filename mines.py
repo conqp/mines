@@ -124,6 +124,13 @@ class Coordinate(NamedTuple):
                 yield type(self)(self.x + delta_x, self.y + delta_y)
 
 
+class PositionedCell(NamedTuple):
+    """A coordinate / cell tuple."""
+
+    position: Coordinate
+    cell: Cell
+
+
 class Minefield:
     """A mine field."""
 
@@ -137,7 +144,6 @@ class Minefield:
             raise ValueError('Too many mines for mine field.')
 
         self._width = width
-        self._height = height
         self._mines = mines
         self._grid = [[Cell() for _ in range(width)] for _ in range(height)]
         self._game_over = None
@@ -146,17 +152,13 @@ class Minefield:
         """Returns a string representation of the minefield."""
         return linesep.join(self._lines)
 
-    def __iter__(self) -> str:
-        return (cell for row in self._grid for cell in row)
+    def __iter__(self) -> Iterator[PositionedCell]:
+        for pos_y, row in enumerate(self._grid):
+            for pos_x, cell in enumerate(row):
+                yield PositionedCell(Coordinate(pos_x, pos_y), cell)
 
     def __contains__(self, item: Union[Cell, Coordinate]) -> bool:
-        if isinstance(item, Cell):
-            return any(cell is item for cell in self)
-
-        if isinstance(item, Coordinate):
-            return 0 <= item.x < self._width and 0 <= item.y < self._height
-
-        return NotImplemented
+        return any(item is cell or item == position for position, cell in self)
 
     def __getitem__(self, position: Coordinate) -> Cell:
         """Returns the cell at the given position."""
@@ -190,7 +192,7 @@ class Minefield:
     @property
     def _uninitialized(self) -> bool:
         """Checks whether all cells are uninitalized."""
-        return all(cell.mine is None for cell in self)
+        return all(cell.mine is None for _, cell in self)
 
     @property
     def _uninitialized_cells(self) -> Iterator[Cell]:
