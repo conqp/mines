@@ -283,7 +283,7 @@ class Action(NamedTuple):
     position: Coordinate
 
     @classmethod
-    def from_items(cls, items: list[str]) -> Action:
+    def from_strings(cls, items: list[str]) -> Action:
         """Creates an action from a list of strings."""
         position = Coordinate.from_strings(filter(str.isdigit, items))
 
@@ -306,7 +306,7 @@ class Action(NamedTuple):
     @classmethod
     def from_string(cls, text: str) -> Action:
         """Parses an action from a string."""
-        return cls.from_items(text.strip().split())
+        return cls.from_strings(text.strip().split())
 
 
 def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
