@@ -129,6 +129,9 @@ class Minefield:
         if width > (maxsize := len(NUM_TO_STR)) or height > maxsize:
             raise ValueError(f'Max field width and height are {maxsize}.')
 
+        if mines < 0:
+            raise ValueError('Amount of mines cannot be negative.')
+
         if mines >= (width * height - 1):
             raise ValueError('Too many mines for mine field.')
 
