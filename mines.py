@@ -9,7 +9,7 @@ from os import linesep
 from random import sample
 from string import digits, ascii_lowercase
 from sys import exit, stderr    # pylint: disable=W0622
-from typing import Iterator, NamedTuple, Optional, Union
+from typing import Iterable, Iterator, NamedTuple, Optional, Union
 from warnings import warn
 
 try:
@@ -75,8 +75,8 @@ class Vector2D(NamedTuple):
     y: int
 
     @classmethod
-    def from_strings(cls, strings: Iterator[str]) -> Vector2D:
-        """Creates a coordinate from a set of strings."""
+    def from_strings(cls, strings: Iterable[str]) -> Vector2D:
+        """Creates a coordinate from an iterable of strings."""
         try:
             return cls(*map(lambda pos: STR_TO_NUM[pos], strings))
         except KeyError as error:
