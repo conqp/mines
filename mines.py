@@ -144,7 +144,7 @@ class Minefield:
         self._grid = [
             [Cell(Vector2D(x, y)) for x in range(width)] for y in range(height)
         ]
-        self._game_over = None
+        self._result = None
 
     def __str__(self) -> str:
         """Returns a string representation of the minefield."""
@@ -220,11 +220,11 @@ class Minefield:
 
     def _stringify(self, cell: Cell) -> str:
         """Return a str representation of the cell at the given coordiate."""
-        if not cell.mine and (cell.visited or self._game_over):
+        if not cell.mine and (cell.visited or self._result is not None):
             if mines := self._surrounding_mines(cell.position):
                 return str(mines)
 
-        return cell.to_string(game_over=self._game_over)
+        return cell.to_string(game_over=self._result is not None)
 
     def _initialize(self, start: Vector2D) -> None:
         """Inistialize the mine field."""
@@ -237,6 +237,11 @@ class Minefield:
         for cell in self._uninitialized_cells:
             cell.mine = False
 
+    def _end_game(self, result: GameOver) -> None:
+        """Ends the game."""
+        self._result = result
+        raise result
+
     def _visit_cell(self, cell: Cell) -> None:
         """Visits the given cell."""
         if cell.visited or cell.marked:
@@ -245,9 +250,9 @@ class Minefield:
         cell.visited = True
 
         if cell.mine:
-            self._game_over = GameOver.LOST
+            self._end_game(GameOver.LOST)
         elif all(cell.visited for cell in self if not cell.mine):
-            self._game_over = GameOver.WON
+            self._end_game(GameOver.WON)
 
     def _visit_neighbors(self, position: Vector2D) -> None:
         """Visits the neighbors of the given position."""
@@ -271,6 +276,9 @@ class Minefield:
 
     def visit(self, position: Vector2D) -> None:
         """Visit the cell at the given position."""
+        if self._result is not None:
+            raise self._result
+
         if self._uninitialized:
             self._initialize(position)
 
@@ -278,9 +286,6 @@ class Minefield:
 
         if self._surrounding_mines(position) == 0:
             self._visit_neighbors(position)
-
-        if self._game_over:
-            raise self._game_over
 
 
 class ActionType(Enum):
