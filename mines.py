@@ -9,7 +9,10 @@ from enum import Enum
 from os import linesep
 from random import choice
 from string import digits, ascii_lowercase
-from sys import exit, setrecursionlimit, stderr     # pylint: disable=W0622
+from sys import exit    # pylint: disable=W0622
+from sys import getrecursionlimit
+from sys import setrecursionlimit
+from sys import stderr
 from typing import Iterator, NamedTuple, Optional, Union
 from warnings import warn
 
@@ -36,7 +39,6 @@ __all__ = [
 
 
 NUM_TO_STR = dict(enumerate(digits + ascii_lowercase))
-setrecursionlimit(len(NUM_TO_STR) ** 2)
 STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
 
 
@@ -137,6 +139,10 @@ class Minefield:
 
         if mines >= (width * height - 1):
             raise ValueError('Too many mines for mine field.')
+
+        if (size := width * height) > getrecursionlimit():
+            warn(f'Large minefield. Increasing recursion limit to {size}')
+            setrecursionlimit(size)
 
         self.width = width
         self.height = height
