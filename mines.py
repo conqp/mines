@@ -182,7 +182,7 @@ class Minefield:
         """Returns the table header."""
         row = ' '.join(NUM_TO_STR[index] for index in range(self.width))
         yield f' |{row}| '
-        yield '-+' + '-' * (self.width * 2 - 1) + '+-'
+        yield ''.join(['-+', '-' * (self.width * 2 - 1), '+-'])
 
     @property
     def _lines(self) -> Iterator[str]:
