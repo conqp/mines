@@ -358,8 +358,8 @@ def main() -> int:
     while True:
         try:
             play_round(minefield)
-        except IndexError as err:
-            print(f'Coordinate must lie on the minefield: {err}', file=stderr)
+        except IndexError:
+            print('Coordinate must lie on the minefield.', file=stderr)
         except KeyboardInterrupt:
             print('\nAborted by user.')
             return int(Returncode.USER_ABORT)
