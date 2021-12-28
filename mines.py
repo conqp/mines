@@ -211,7 +211,7 @@ class Minefield:
         return sum(cell.mine for cell in self._neighbors(position))
 
     def _cell_to_str(self, cell: Cell) -> str:
-        """Return a str representation of the cell at the given coordiate."""
+        """Return a str representation of the cell."""
         if cell.flagged:
             return '?' if self._result is None else ('!' if cell.mine else 'x')
 
