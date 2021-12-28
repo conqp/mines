@@ -6,7 +6,7 @@ from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
 from enum import Enum
 from os import linesep
-from random import choice
+from random import sample
 from string import digits, ascii_lowercase
 from sys import exit, stderr    # pylint: disable=W0622
 from typing import Iterator, NamedTuple, Optional, Union
@@ -192,6 +192,11 @@ class Minefield:
         """Checks whether all cells are uninitalized."""
         return all(cell.mine is None for cell in self)
 
+    @property
+    def _uninitialized_cells(self) -> Iterator[Cell]:
+        """Yields cells that have not been initialized."""
+        return filter(lambda cell: cell.mine is None, self)
+
     def _neighbors(self, position: Coordinate) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
         for neighbor in position.neighbors:
@@ -217,17 +222,15 @@ class Minefield:
 
         return cell.to_string(game_over=self._game_over)
 
-    def _initialize(self, position: Coordinate) -> None:
+    def _initialize(self, start: Coordinate) -> None:
         """Inistialize the mine field."""
-        self[position].mine = False
-        cells = [cell for cell in self if cell.mine is None]
+        # Ensure that we do not step on a mine on our first visit.
+        self[start].mine = False
 
-        for _ in range(self._mines):
-            cell = choice(cells)
+        for cell in sample(list(self._uninitialized_cells), k=self._mines):
             cell.mine = True
-            cells.remove(cell)
 
-        for cell in cells:
+        for cell in self._uninitialized_cells:
             cell.mine = False
 
     def _visit_cell(self, cell: Cell) -> None:
