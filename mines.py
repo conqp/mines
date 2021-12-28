@@ -125,13 +125,6 @@ class Cell:
         self.marked = not self.marked
 
 
-class PositionedCell(NamedTuple):
-    """A coordinate / cell tuple."""
-
-    position: Vector2D
-    cell: Cell
-
-
 class Minefield:
     """A mine field."""
 
@@ -157,10 +150,8 @@ class Minefield:
         """Returns a string representation of the minefield."""
         return linesep.join(self._lines)
 
-    def __iter__(self) -> Iterator[PositionedCell]:
-        for pos_y, row in enumerate(self._grid):
-            for pos_x, cell in enumerate(row):
-                yield PositionedCell(Vector2D(pos_x, pos_y), cell)
+    def __iter__(self) -> Iterator[Cell]:
+        return (cell for row in self._grid for cell in row)
 
     def __contains__(self, item: Union[Cell, Vector2D]) -> bool:
         if isinstance(item, Cell):
@@ -199,23 +190,20 @@ class Minefield:
 
         for pos_y, row in enumerate(self._grid):
             prefix = NUM_TO_STR[pos_y]
-            row = ' '.join(
-                self._stringify(cell, pos_x, pos_y)
-                for pos_x, cell in enumerate(row)
-            )
+            row = ' '.join(self._stringify(cell) for cell in row)
             yield f'{prefix}|{row}|{prefix}'
 
         yield from reversed(header)
 
     @property
     def _uninitialized(self) -> bool:
-        """Checks whether all cells are uninitalized."""
-        return all(cell.mine is None for _, cell in self)
+        """Check whether all cells are uninitalized."""
+        return all(cell.mine is None for cell in self)
 
     @property
     def _uninitialized_cells(self) -> list[Cell]:
-        """Yields cells that have not been initialized."""
-        return [cell for _, cell in self if cell.mine is None]
+        """Yield cells that have not been initialized."""
+        return [cell for cell in self if cell.mine is None]
 
     def _neighbors(self, position: Vector2D) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
@@ -223,21 +211,18 @@ class Minefield:
             if (cell := self.get(neighbor)):
                 yield cell
 
-    def _unvisited_neighbors(self, position: Vector2D) \
-            -> Iterator[tuple[Vector2D, Cell]]:
-        """Yield coordinate / cells tuples of cells that are unvisited."""
-        for neighbor in position.neighbors:
-            if (cell := self.get(neighbor)) and not cell.visited:
-                yield (neighbor, cell)
+    def _unvisited_neighbors(self, position: Vector2D) -> Iterator[Cell]:
+        """Yield cells surrounding the given position that are unvisited."""
+        return filter(lambda cell: not cell.visited, self._neighbors(position))
 
     def _surrounding_mines(self, position: Vector2D) -> int:
         """Return the amount of mines surrounding the given position."""
         return sum(cell.mine for cell in self._neighbors(position))
 
-    def _stringify(self, cell: Cell, pos_x: int, pos_y: int) -> str:
+    def _stringify(self, cell: Cell) -> str:
         """Return a str representation of the cell at the given coordiate."""
         if not cell.mine and (cell.visited or self._game_over):
-            if mines := self._surrounding_mines(Vector2D(pos_x, pos_y)):
+            if mines := self._surrounding_mines(cell.position):
                 return str(mines)
 
         return cell.to_string(game_over=self._game_over)
@@ -262,19 +247,18 @@ class Minefield:
 
         if cell.mine:
             self._game_over = GameOver.LOST
-        elif all(cell.visited for _, cell in self if not cell.mine):
+        elif all(cell.visited for cell in self if not cell.mine):
             self._game_over = GameOver.WON
 
     def _visit_neighbors(self, position: Vector2D) -> None:
         """Visits the neighbors of the given position."""
-        unvisited = dict(self._unvisited_neighbors(position))
+        unvisited = list(self._unvisited_neighbors(position))
 
         while unvisited:
-            position, cell = unvisited.popitem()
-            self._visit_cell(cell)
+            self._visit_cell(cell := unvisited.pop())
 
-            if self._surrounding_mines(position) == 0:
-                unvisited.update(dict(self._unvisited_neighbors(position)))
+            if self._surrounding_mines(cell.position) == 0:
+                unvisited.extend(self._unvisited_neighbors(cell.position))
 
     def get(self, position: Vector2D) -> Optional[Cell]:
         """Returns the cell at the given coordinate,
