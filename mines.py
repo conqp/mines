@@ -264,7 +264,6 @@ class Minefield:
 
         while unvisited:
             position, cell = unvisited.popitem()
-            print('Mine:', cell.mine)
             self._visit_cell(cell)
 
             if self.count_surrounding_mines(position) == 0:
