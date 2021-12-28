@@ -8,10 +8,7 @@ from enum import Enum
 from os import linesep
 from random import choice
 from string import digits, ascii_lowercase
-from sys import exit    # pylint: disable=W0622
-from sys import getrecursionlimit
-from sys import setrecursionlimit
-from sys import stderr
+from sys import exit, stderr    # pylint: disable=W0622
 from typing import Iterator, NamedTuple, Optional, Union
 from warnings import warn
 
@@ -139,10 +136,6 @@ class Minefield:
         if mines >= (width * height - 1):
             raise ValueError('Too many mines for mine field.')
 
-        if (size := width * height) > getrecursionlimit():
-            warn(f'Large minefield. Increasing recursion limit to {size}')
-            setrecursionlimit(size)
-
         self.width = width
         self.height = height
         self.mines = mines
@@ -209,6 +202,13 @@ class Minefield:
             if (cell := self.get(neighbor)):
                 yield cell
 
+    def get_unvisited_neighbors(self, position: Coordinate) \
+            -> Iterator[tuple[Coordinate, Cell]]:
+        """Yield coordinate / cells tuples of cells that are unvisited."""
+        for neighbor in position.neighbors:
+            if (cell := self.get(neighbor)) and not cell.visited:
+                yield (neighbor, cell)
+
     def count_surrounding_mines(self, position: Coordinate) -> int:
         """Return the amount of mines surrounding the given position."""
         return sum(cell.mine for cell in self.get_neighbors(position))
@@ -258,25 +258,26 @@ class Minefield:
         elif all(cell.visited for cell in self if not cell.mine):
             self.game_over = GameOver.WON
 
-    def _visit(self, position: Coordinate, visited: set[Coordinate]) -> None:
-        """Visits the respective position."""
-        if (cell := self.get(position)) is None:
-            return
+    def _visit_neighbors(self, position: Coordinate) -> None:
+        """Visits the neighbors of the given position."""
+        unvisited = dict(self.get_unvisited_neighbors(position))
 
-        self._visit_cell(cell)
-        visited.add(position)
+        while unvisited:
+            position, cell = unvisited.popitem()
+            self._visit_cell(cell)
 
-        if self.count_surrounding_mines(position) == 0:
-            for neighbor in position.neighbors:
-                if neighbor not in visited:
-                    self._visit(neighbor, visited=visited)
+            if self.count_surrounding_mines(position) == 0:
+                unvisited.update(dict(self.get_unvisited_neighbors(position)))
 
     def visit(self, position: Coordinate) -> None:
         """Visit the cell at the given position."""
         if self.uninitialized:
             self.initialize(position)
 
-        self._visit(position, set())
+        self._visit_cell(self[position])
+
+        if self.count_surrounding_mines(position) == 0:
+            self._visit_neighbors(position)
 
         if self.game_over:
             raise self.game_over
