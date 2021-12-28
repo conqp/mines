@@ -257,9 +257,6 @@ class Minefield:
 
     def visit(self, position: Coordinate) -> None:
         """Visit the cell at the given position."""
-        if self.game_over:
-            raise self.game_over
-
         if self.uninitialized:
             self.initialize(position)
 
