@@ -41,10 +41,10 @@ STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
 class Returncode(Enum):
     """Available returncodes."""
 
-    USER_ABORT = 3
-    INVALID_PARAMETER = 2
-    LOST = 1
     WON = 0
+    LOST = 1
+    INVALID_PARAMETER = 2
+    USER_ABORT = 3
 
     def __int__(self) -> int:
         return self.value
