@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 from argparse import ArgumentParser, Namespace
-from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from os import linesep
@@ -168,10 +167,10 @@ class Minefield:
 
     def __getitem__(self, position: Coordinate) -> Cell:
         """Returns the cell at the given position."""
-        if not position in self:
-            raise IndexError(position)
+        if position in self:
+            return self.grid[position.y][position.x]
 
-        return self.grid[position.y][position.x]
+        raise IndexError(position)
 
     @property
     def header(self) -> Iterator[str]:
@@ -198,11 +197,17 @@ class Minefield:
         """Checks whether all cells are uninitalized."""
         return all(cell.mine is None for cell in self)
 
+    def get(self, position: Coordinate) -> Optional[Cell]:
+        """Returns the cell at the given coordinate,
+        if is on the minefield or else None.
+        """
+        return self.grid[position.y][position.x] if position in self else None
+
     def get_neighbors(self, position: Coordinate) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
         for neighbor in position.neighbors:
-            with suppress(IndexError):
-                yield self[neighbor]
+            if (cell := self.get(neighbor)):
+                yield cell
 
     def count_surrounding_mines(self, position: Coordinate) -> int:
         """Return the amount of mines surrounding the given position."""
@@ -255,11 +260,10 @@ class Minefield:
 
     def _visit(self, position: Coordinate, visited: set[Coordinate]) -> None:
         """Visits the respective position."""
-        try:
-            self._visit_cell(self[position])
-        except IndexError:
+        if (cell := self.get(position)) is None:
             return
 
+        self._visit_cell(cell)
         visited.add(position)
 
         if self.count_surrounding_mines(position) == 0:
