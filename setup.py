@@ -15,7 +15,5 @@ setup(
     url='https://github.com/conqp/mines',
     license='GPLv3',
     description='A mine sweeping game for the terminal.',
-    long_description=open('README.md').read(),
-    long_description_content_type="text/markdown",
     keywords='mine sweeper minesweeper python console terminal'
 )
