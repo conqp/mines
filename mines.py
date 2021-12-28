@@ -225,7 +225,10 @@ class Minefield:
 
     def _stringify(self, cell: Cell) -> str:
         """Return a str representation of the cell at the given coordiate."""
-        if not cell.mine and (cell.visited or self._result is not None):
+        if cell.flagged or cell.mine:
+            return cell.to_string(game_over=self._result is not None)
+
+        if cell.visited or self._result is not None:
             if mines := self._surrounding_mines(cell.position):
                 return str(mines)
 
