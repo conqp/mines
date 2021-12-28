@@ -36,6 +36,14 @@ __all__ = [
 
 NUM_TO_STR = dict(enumerate(digits + ascii_lowercase))
 STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
+USAGE = '''Visit fields:
+    $ <x> <y>
+    $ V <x> <y>
+    $ visit <x> <y>
+
+Toggle flags:
+    $ M <x> <y>
+    $ mark <x> <y>'''
 
 
 class Returncode(Enum):
@@ -351,6 +359,7 @@ def get_args(description: str = __doc__) -> Namespace:
     parser.add_argument('--width', type=int, metavar='x', default=8)
     parser.add_argument('--height', type=int, metavar='y', default=8)
     parser.add_argument('--mines', type=int, metavar='n', default=10)
+    parser.add_argument('--usage', action='store_true')
     return parser.parse_args()
 
 
@@ -370,6 +379,10 @@ def main() -> int:
     """Run the minesweeper game."""
 
     args = get_args()
+
+    if args.usage:
+        print(USAGE)
+        return 0
 
     try:
         minefield = Minefield(args.width, args.height, args.mines)
