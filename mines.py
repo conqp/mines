@@ -260,9 +260,7 @@ class Minefield:
 
     def _visit_neighbors(self, position: Coordinate) -> None:
         """Visits the neighbors of the given position."""
-        unvisited = dict(self.get_unvisited_neighbors(position))
-
-        while unvisited:
+        while (unvisited := dict(self.get_unvisited_neighbors(position))):
             position, cell = unvisited.popitem()
             self._visit_cell(cell)
 
