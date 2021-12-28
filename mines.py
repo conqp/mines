@@ -11,7 +11,7 @@ from os import linesep
 from random import choice
 from string import digits, ascii_lowercase
 from sys import exit, stderr    # pylint: disable=W0622
-from typing import Iterator, NamedTuple, Optional
+from typing import Iterator, NamedTuple, Optional, Union
 from warnings import warn
 
 try:
@@ -135,6 +135,15 @@ class Minefield:
     def __iter__(self) -> str:
         return (cell for row in self.grid for cell in row)
 
+    def __contains__(self, item: Union[Cell, Coordinate]) -> bool:
+        if isinstance(item, Cell):
+            return any(cell is item for cell in self)
+
+        if isinstance(self, Coordinate):
+            return 0 <= item.x < self.width and 0 <= item.y < self.height
+
+        return NotImplemented
+
     @property
     def header(self) -> Iterator[str]:
         """Returns the table header."""
@@ -160,13 +169,9 @@ class Minefield:
         """Checks whether all cells are uninitalized."""
         return all(cell.mine is None for cell in self)
 
-    def is_on_field(self, position: Coordinate) -> bool:
-        """Determine whether the position is on the field."""
-        return 0 <= position.x < self.width and 0 <= position.y < self.height
-
     def cell_at(self, position: Coordinate) -> Cell:
         """Returns the cell at the given position."""
-        if not self.is_on_field(position):
+        if not position in self:
             raise NotOnField(position)
 
         return self.grid[position.y][position.x]
