@@ -322,7 +322,6 @@ def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
             return Action.from_string(text)
         except ValueError as error:
             print(error)
-            continue
 
 
 def get_args(description: str = __doc__) -> Namespace:
