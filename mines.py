@@ -9,7 +9,7 @@ from enum import Enum
 from os import linesep
 from random import choice
 from string import digits, ascii_lowercase
-from sys import exit, stderr    # pylint: disable=W0622
+from sys import exit, setrecursionlimit, stderr     # pylint: disable=W0622
 from typing import Iterator, NamedTuple, Optional, Union
 from warnings import warn
 
@@ -36,6 +36,7 @@ __all__ = [
 
 
 NUM_TO_STR = dict(enumerate(digits + ascii_lowercase))
+setrecursionlimit(len(NUM_TO_STR) ** 2)
 STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
 
 
@@ -234,13 +235,8 @@ class Minefield:
         """Toggels the marker on the given cell."""
         self[position].toggle_marked()
 
-    def _visit(self, position: Coordinate) -> None:
-        """Visits the respective position."""
-        try:
-            cell = self[position]
-        except IndexError:
-            return
-
+    def _visit_cell(self, cell: Cell) -> None:
+        """Visits the given cell."""
         if cell.visited or cell.marked:
             return
 
@@ -251,16 +247,26 @@ class Minefield:
         elif all(cell.visited for cell in self if not cell.mine):
             self.game_over = GameOver.WON
 
+    def _visit(self, position: Coordinate, visited: set[Coordinate]) -> None:
+        """Visits the respective position."""
+        try:
+            self._visit_cell(self[position])
+        except IndexError:
+            return
+
+        visited.add(position)
+
         if self.count_surrounding_mines(position) == 0:
             for neighbor in position.neighbors:
-                self._visit(neighbor)
+                if neighbor not in visited:
+                    self._visit(neighbor, visited=visited)
 
     def visit(self, position: Coordinate) -> None:
         """Visit the cell at the given position."""
         if self.uninitialized:
             self.initialize(position)
 
-        self._visit(position)
+        self._visit(position, set())
 
         if self.game_over:
             raise self.game_over
