@@ -52,8 +52,11 @@ class Returncode(Enum):
         return self.value
 
 
-class GameOver(Exception):
+class GameOver(Exception, Enum):
     """Indicates that the game has ended."""
+
+    LOST = ('You stepped onto a mine. :(', Returncode.LOST)
+    WON = ('All mines cleared. Great job.', Returncode.WON)
 
     def __init__(self, message: str, returncode: Returncode):
         super().__init__(message)
@@ -245,11 +248,9 @@ class Minefield:
         cell.visited = True
 
         if cell.mine:
-            self.game_over = GameOver('You stepped onto a mine. :(',
-                                      Returncode.LOST)
+            self.game_over = GameOver.LOST
         elif all(cell.visited for cell in self if not cell.mine):
-            self.game_over = GameOver('All mines cleared. Great job.',
-                                      Returncode.WON)
+            self.game_over = GameOver.WON
 
         if self.count_surrounding_mines(position) == 0:
             for neighbor in position.neighbors:
