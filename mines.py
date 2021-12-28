@@ -22,8 +22,8 @@ __all__ = [
     'NUM_TO_STR',
     'STR_TO_NUM',
     'GameOver',
-    'Cell',
     'Vector2D',
+    'Cell',
     'Minefield',
     'ActionType',
     'Action',
@@ -68,35 +68,6 @@ class GameOver(Exception, Enum):
         return self.message
 
 
-@dataclass
-class Cell:
-    """A cell of a minefield."""
-
-    mine: Optional[bool] = None
-    marked: bool = False
-    visited: bool = False
-
-    def to_string(self, *, game_over: bool = False) -> str:
-        """Returns a string representation."""
-        if self.visited:
-            return '*' if self.mine else ' '
-
-        if self.marked:
-            return ('!' if self.mine else 'x') if game_over else '?'
-
-        if game_over and self.mine:
-            return 'o'
-
-        return ' ' if game_over else '■'
-
-    def toggle_marker(self) -> None:
-        """Toggles the marker on this field."""
-        if self.visited:
-            return
-
-        self.marked = not self.marked
-
-
 class Vector2D(NamedTuple):
     """A 2D coordinate on a grid."""
 
@@ -124,6 +95,36 @@ class Vector2D(NamedTuple):
                 yield type(self)(self.x + delta_x, self.y + delta_y)
 
 
+@dataclass
+class Cell:
+    """A cell of a minefield."""
+
+    position: Vector2D
+    mine: Optional[bool] = None
+    marked: bool = False
+    visited: bool = False
+
+    def to_string(self, *, game_over: bool = False) -> str:
+        """Returns a string representation."""
+        if self.visited:
+            return '*' if self.mine else ' '
+
+        if self.marked:
+            return ('!' if self.mine else 'x') if game_over else '?'
+
+        if game_over and self.mine:
+            return 'o'
+
+        return ' ' if game_over else '■'
+
+    def toggle_marker(self) -> None:
+        """Toggles the marker on this field."""
+        if self.visited:
+            return
+
+        self.marked = not self.marked
+
+
 class PositionedCell(NamedTuple):
     """A coordinate / cell tuple."""
 
@@ -147,7 +148,9 @@ class Minefield:
             raise ValueError('Too many mines for mine field.')
 
         self._mines = mines
-        self._grid = [[Cell() for _ in range(width)] for _ in range(height)]
+        self._grid = [
+            [Cell(Vector2D(x, y)) for x in range(width)] for y in range(height)
+        ]
         self._game_over = None
 
     def __str__(self) -> str:
