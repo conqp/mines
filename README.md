@@ -3,8 +3,8 @@ A mine sweeping game for the console
 
 ## Visit fields
 
-    <x> <x>
+    <x> <y>
     
-# Toggle flags
+## Toggle flags
 
     ? <x> <y>
