@@ -222,8 +222,8 @@ class Minefield:
             return 'o'
 
         if not cell.mine and (cell.visited or self._result is not None):
-            if mines := self._surrounding_mines(cell.position):
-                return str(mines)
+            if surrounding_mines := self._surrounding_mines(cell.position):
+                return str(surrounding_mines)
 
             return ' '
 
