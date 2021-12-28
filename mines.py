@@ -151,6 +151,7 @@ class Minefield:
         return linesep.join(self._lines)
 
     def __iter__(self) -> Iterator[Cell]:
+        """Yields all cells of the minefield."""
         return (cell for row in self._grid for cell in row)
 
     def __contains__(self, item: Union[Cell, Vector2D]) -> bool:
