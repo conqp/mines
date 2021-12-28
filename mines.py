@@ -4,7 +4,7 @@
 from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, auto
 from os import linesep
 from random import sample
 from string import digits, ascii_lowercase
@@ -291,8 +291,8 @@ class Minefield:
 class ActionType(Enum):
     """Game actions."""
 
-    VISIT = 'visit'
-    MARK = 'mark'
+    MARK = auto()
+    VISIT = auto()
 
 
 class Action(NamedTuple):
