@@ -5,6 +5,6 @@ A mine sweeping game for the console
 
     <x> <x>
     
-# Toggle flags
+## Toggle flags
 
     ? <x> <y>
