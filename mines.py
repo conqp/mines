@@ -256,7 +256,7 @@ class Minefield:
 
         if cell.mine:
             self._game_over = GameOver.LOST
-        elif all(cell.visited for cell in self if not cell.mine):
+        elif all(cell.visited for _, cell in self if not cell.mine):
             self._game_over = GameOver.WON
 
     def _visit_neighbors(self, position: Coordinate) -> None:
