@@ -41,13 +41,31 @@ NUM_TO_STR = dict(enumerate(digits + ascii_lowercase))
 STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
 
 
+class Returncode(Enum):
+    """Available returncodes."""
+
+    USER_ABORT = 3
+    INVALID_PARAMETER = 2
+    LOST = 1
+    WON = 0
+
+    def __int__(self) -> int:
+        return self.value
+
+
 class GameOver(Exception):
     """Indicates that the game has ended."""
 
-    def __init__(self, message: str, returncode: int):
+    def __init__(self, message: str, returncode: Returncode):
         super().__init__(message)
         self.message = message
         self.returncode = returncode
+
+    def __int__(self) -> int:
+        return int(self.returncode)
+
+    def __str__(self) -> str:
+        return self.message
 
 
 class NotOnField(Exception):
@@ -232,9 +250,11 @@ class Minefield:
         cell.visited = True
 
         if cell.mine:
-            self.game_over = GameOver('You stepped onto a mine. :(', 1)
+            self.game_over = GameOver('You stepped onto a mine. :(',
+                                      Returncode.LOST)
         elif all(cell.visited for cell in self if not cell.mine):
-            self.game_over = GameOver('All mines cleared. Great job.', 0)
+            self.game_over = GameOver('All mines cleared. Great job.',
+                                      Returncode.WON)
 
         if self.count_surrounding_mines(position) == 0:
             for neighbor in position.neighbors:
@@ -341,7 +361,7 @@ def main() -> int:
         minefield = Minefield(args.width, args.height, args.mines)
     except ValueError as error:
         print(error, file=stderr)
-        return 2
+        return int(Returncode.INVALID_PARAMETER)
 
     while True:
         try:
@@ -350,11 +370,11 @@ def main() -> int:
             print(f'Coordinate must lie on the minefield: {err}', file=stderr)
         except KeyboardInterrupt:
             print('\nAborted by user.')
-            return 3
+            return int(Returncode.USER_ABORT)
         except GameOver as game_over:
             print(minefield)
-            print(game_over.message)
-            return game_over.returncode
+            print(game_over)
+            return int(game_over)
 
 
 if __name__ == '__main__':
