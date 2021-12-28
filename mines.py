@@ -391,7 +391,7 @@ def main() -> int:
         try:
             play_round(minefield)
         except IndexError:
-            print('Vector2D must lie on the minefield.', file=stderr)
+            print('Coordinates must lie on the minefield.', file=stderr)
         except KeyboardInterrupt:
             print('\nAborted by user.')
             return int(Returncode.USER_ABORT)
