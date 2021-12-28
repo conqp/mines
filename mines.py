@@ -38,12 +38,9 @@ NUM_TO_STR = dict(enumerate(digits + ascii_lowercase))
 STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
 USAGE = '''Visit fields:
     $ <x> <y>
-    $ V <x> <y>
-    $ visit <x> <y>
 
 Toggle flags:
-    $ M <x> <y>
-    $ mark <x> <y>'''
+    $ ? <x> <y>'''
 
 
 class Returncode(Enum):
@@ -109,7 +106,7 @@ class Cell:
 
     position: Vector2D
     mine: Optional[bool] = None
-    marked: bool = False
+    flagged: bool = False
     visited: bool = False
 
     def to_string(self, *, game_over: bool = False) -> str:
@@ -117,7 +114,7 @@ class Cell:
         if self.visited:
             return '*' if self.mine else ' '
 
-        if self.marked:
+        if self.flagged:
             return ('!' if self.mine else 'x') if game_over else '?'
 
         if game_over and self.mine:
@@ -125,12 +122,12 @@ class Cell:
 
         return ' ' if game_over else '■'
 
-    def toggle_marker(self) -> None:
-        """Toggles the marker on this field."""
+    def toggle_flag(self) -> None:
+        """Toggles the flag on this field."""
         if self.visited:
             return
 
-        self.marked = not self.marked
+        self.flagged = not self.flagged
 
 
 class Minefield:
@@ -252,7 +249,7 @@ class Minefield:
 
     def _visit_cell(self, cell: Cell) -> None:
         """Visits the given cell."""
-        if cell.visited or cell.marked:
+        if cell.visited or cell.flagged:
             return
 
         cell.visited = True
@@ -278,9 +275,9 @@ class Minefield:
         """
         return self._grid[position.y][position.x] if position in self else None
 
-    def toggle_marker(self, position: Vector2D) -> None:
+    def toggle_flag(self, position: Vector2D) -> None:
         """Toggels the marker on the given cell."""
-        self[position].toggle_marker()
+        self[position].toggle_flag()
 
     def visit(self, position: Vector2D) -> None:
         """Visit the cell at the given position."""
@@ -299,7 +296,7 @@ class Minefield:
 class ActionType(Enum):
     """Game actions."""
 
-    MARK = auto()
+    FLAG = auto()
     VISIT = auto()
 
 
@@ -321,13 +318,10 @@ class Action(NamedTuple):
             return cls(ActionType.VISIT, position)
 
         if excess:
-            raise ValueError('Must specify exactly one command.')
+            raise ValueError('Must specify at most one command.')
 
-        if 'visit'.startswith(action := action.casefold()):
-            return cls(ActionType.VISIT, position)
-
-        if 'mark'.startswith(action):
-            return cls(ActionType.MARK, position)
+        if action == '?':
+            return cls(ActionType.FLAG, position)
 
         raise ValueError(f'Action not recognized: {action}')
 
@@ -369,8 +363,8 @@ def play_round(minefield: Minefield) -> None:
     print(minefield)
     action = read_action()
 
-    if action.action == ActionType.MARK:
-        minefield.toggle_marker(action.position)
+    if action.action == ActionType.FLAG:
+        minefield.toggle_flag(action.position)
     else:
         minefield.visit(action.position)
 
