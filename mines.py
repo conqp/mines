@@ -207,9 +207,9 @@ class Minefield:
         return all(cell.mine is None for _, cell in self)
 
     @property
-    def _uninitialized_cells(self) -> Iterator[Cell]:
+    def _uninitialized_cells(self) -> list[Cell]:
         """Yields cells that have not been initialized."""
-        return filter(lambda cell: cell.mine is None, self)
+        return [cell for _, cell in self if cell.mine is None]
 
     def _neighbors(self, position: Coordinate) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
@@ -241,7 +241,7 @@ class Minefield:
         # Ensure that we do not step on a mine on our first visit.
         self[start].mine = False
 
-        for cell in sample(list(self._uninitialized_cells), k=self._mines):
+        for cell in sample(self._uninitialized_cells, k=self._mines):
             cell.mine = True
 
         for cell in self._uninitialized_cells:
