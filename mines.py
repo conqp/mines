@@ -23,7 +23,7 @@ __all__ = [
     'STR_TO_NUM',
     'GameOver',
     'Cell',
-    'Coordinate',
+    'Vector2D',
     'Minefield',
     'ActionType',
     'Action',
@@ -97,14 +97,14 @@ class Cell:
         self.marked = not self.marked
 
 
-class Coordinate(NamedTuple):
+class Vector2D(NamedTuple):
     """A 2D coordinate on a grid."""
 
     x: int
     y: int
 
     @classmethod
-    def from_strings(cls, strings: Iterator[str]) -> Coordinate:
+    def from_strings(cls, strings: Iterator[str]) -> Vector2D:
         """Creates a coordinate from a set of strings."""
         try:
             return cls(*map(lambda pos: STR_TO_NUM[pos], strings))
@@ -114,7 +114,7 @@ class Coordinate(NamedTuple):
             raise ValueError('Expect two coordinates: x and y') from None
 
     @property
-    def neighbors(self) -> Iterator[Coordinate]:
+    def neighbors(self) -> Iterator[Vector2D]:
         """Yield fields surrounding this position."""
         for delta_y in range(-1, 2):
             for delta_x in range(-1, 2):
@@ -127,7 +127,7 @@ class Coordinate(NamedTuple):
 class PositionedCell(NamedTuple):
     """A coordinate / cell tuple."""
 
-    position: Coordinate
+    position: Vector2D
     cell: Cell
 
 
@@ -157,12 +157,12 @@ class Minefield:
     def __iter__(self) -> Iterator[PositionedCell]:
         for pos_y, row in enumerate(self._grid):
             for pos_x, cell in enumerate(row):
-                yield PositionedCell(Coordinate(pos_x, pos_y), cell)
+                yield PositionedCell(Vector2D(pos_x, pos_y), cell)
 
-    def __contains__(self, item: Union[Cell, Coordinate]) -> bool:
+    def __contains__(self, item: Union[Cell, Vector2D]) -> bool:
         return any(item is cell or item == position for position, cell in self)
 
-    def __getitem__(self, position: Coordinate) -> Cell:
+    def __getitem__(self, position: Vector2D) -> Cell:
         """Returns the cell at the given position."""
         if position in self:
             return self._grid[position.y][position.x]
@@ -211,32 +211,32 @@ class Minefield:
         """Yields cells that have not been initialized."""
         return [cell for _, cell in self if cell.mine is None]
 
-    def _neighbors(self, position: Coordinate) -> Iterator[Cell]:
+    def _neighbors(self, position: Vector2D) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
         for neighbor in position.neighbors:
             if (cell := self.get(neighbor)):
                 yield cell
 
-    def _unvisited_neighbors(self, position: Coordinate) \
-            -> Iterator[tuple[Coordinate, Cell]]:
+    def _unvisited_neighbors(self, position: Vector2D) \
+            -> Iterator[tuple[Vector2D, Cell]]:
         """Yield coordinate / cells tuples of cells that are unvisited."""
         for neighbor in position.neighbors:
             if (cell := self.get(neighbor)) and not cell.visited:
                 yield (neighbor, cell)
 
-    def _surrounding_mines(self, position: Coordinate) -> int:
+    def _surrounding_mines(self, position: Vector2D) -> int:
         """Return the amount of mines surrounding the given position."""
         return sum(cell.mine for cell in self._neighbors(position))
 
     def _stringify(self, cell: Cell, pos_x: int, pos_y: int) -> str:
         """Return a str representation of the cell at the given coordiate."""
         if not cell.mine and (cell.visited or self._game_over):
-            if mines := self._surrounding_mines(Coordinate(pos_x, pos_y)):
+            if mines := self._surrounding_mines(Vector2D(pos_x, pos_y)):
                 return str(mines)
 
         return cell.to_string(game_over=self._game_over)
 
-    def _initialize(self, start: Coordinate) -> None:
+    def _initialize(self, start: Vector2D) -> None:
         """Inistialize the mine field."""
         # Ensure that we do not step on a mine on our first visit.
         self[start].mine = False
@@ -259,7 +259,7 @@ class Minefield:
         elif all(cell.visited for _, cell in self if not cell.mine):
             self._game_over = GameOver.WON
 
-    def _visit_neighbors(self, position: Coordinate) -> None:
+    def _visit_neighbors(self, position: Vector2D) -> None:
         """Visits the neighbors of the given position."""
         unvisited = dict(self._unvisited_neighbors(position))
 
@@ -270,17 +270,17 @@ class Minefield:
             if self._surrounding_mines(position) == 0:
                 unvisited.update(dict(self._unvisited_neighbors(position)))
 
-    def get(self, position: Coordinate) -> Optional[Cell]:
+    def get(self, position: Vector2D) -> Optional[Cell]:
         """Returns the cell at the given coordinate,
         if is on the minefield or else None.
         """
         return self._grid[position.y][position.x] if position in self else None
 
-    def toggle_marker(self, position: Coordinate) -> None:
+    def toggle_marker(self, position: Vector2D) -> None:
         """Toggels the marker on the given cell."""
         self[position].toggle_marker()
 
-    def visit(self, position: Coordinate) -> None:
+    def visit(self, position: Vector2D) -> None:
         """Visit the cell at the given position."""
         if self._uninitialized:
             self._initialize(position)
@@ -305,13 +305,13 @@ class Action(NamedTuple):
     """An action on a coordinate."""
 
     action: ActionType
-    position: Coordinate
+    position: Vector2D
 
     @classmethod
     def from_strings(cls, items: list[str]) -> Action:
         """Creates an action from a list of strings."""
         coordinates = [item for item in items if item in STR_TO_NUM.keys()]
-        position = Coordinate.from_strings(coordinates)
+        position = Vector2D.from_strings(coordinates)
 
         try:
             action, *excess = filter(lambda i: i not in coordinates, items)
@@ -387,7 +387,7 @@ def main() -> int:
         try:
             play_round(minefield)
         except IndexError:
-            print('Coordinate must lie on the minefield.', file=stderr)
+            print('Vector2D must lie on the minefield.', file=stderr)
         except KeyboardInterrupt:
             print('\nAborted by user.')
             return int(Returncode.USER_ABORT)
