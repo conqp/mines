@@ -109,19 +109,6 @@ class Cell:
     flagged: bool = False
     visited: bool = False
 
-    def to_string(self, *, game_over: bool = False) -> str:
-        """Returns a string representation."""
-        if self.visited:
-            return '*' if self.mine else ' '
-
-        if self.flagged:
-            return ('!' if self.mine else 'x') if game_over else '?'
-
-        if game_over and self.mine:
-            return 'o'
-
-        return ' ' if game_over else '■'
-
     def toggle_flag(self) -> None:
         """Toggles the flag on this field."""
         if self.visited:
@@ -196,7 +183,7 @@ class Minefield:
 
         for pos_y, row in enumerate(self._grid):
             prefix = NUM_TO_STR[pos_y]
-            row = ' '.join(self._stringify(cell) for cell in row)
+            row = ' '.join(self._cell_to_str(cell) for cell in row)
             yield f'{prefix}|{row}|{prefix}'
 
         yield from reversed(header)
@@ -223,16 +210,24 @@ class Minefield:
         """Return the amount of mines surrounding the given position."""
         return sum(cell.mine for cell in self._neighbors(position))
 
-    def _stringify(self, cell: Cell) -> str:
+    def _cell_to_str(self, cell: Cell) -> str:
         """Return a str representation of the cell at the given coordiate."""
-        if cell.flagged or cell.mine:
-            return cell.to_string(game_over=self._result is not None)
+        if cell.flagged:
+            return '?' if self._result is None else ('!' if cell.mine else 'x')
 
-        if cell.visited or self._result is not None:
+        if cell.mine and cell.visited:
+            return '*'
+
+        if cell.mine and self._result is not None:
+            return 'o'
+
+        if not cell.mine and (cell.visited or self._result is not None):
             if mines := self._surrounding_mines(cell.position):
                 return str(mines)
 
-        return cell.to_string(game_over=self._result is not None)
+            return ' '
+
+        return '■'
 
     def _initialize(self, start: Vector2D) -> None:
         """Inistialize the mine field."""
