@@ -219,7 +219,7 @@ class Minefield:
         """Toggels the marker on the given cell."""
         self[position].toggle_marked()
 
-    def _visit(self, position) -> None:
+    def _visit(self, position: Coordinate) -> None:
         """Visits the respective position."""
         try:
             cell = self[position]
