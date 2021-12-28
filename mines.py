@@ -320,7 +320,7 @@ class Action(NamedTuple):
             return cls(ActionType.VISIT, position)
 
         if excess:
-            raise ValueError('Must specify at most one command.')
+            raise ValueError('Must specify at most one action.')
 
         if action == '?':
             return cls(ActionType.FLAG, position)
