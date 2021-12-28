@@ -169,13 +169,13 @@ class Minefield:
     def _header(self) -> Iterator[str]:
         """Returns the table header."""
         row = ' '.join(NUM_TO_STR[index] for index in range(self._width))
-        yield f' |{row}'
-        yield '-+' + '-' * (self._width * 2 - 1)
+        yield f' |{row}| '
+        yield '-+' + '-' * (self._width * 2 - 1) + '+-'
 
     @property
     def _lines(self) -> Iterator[str]:
         """Yield lines of the str representation."""
-        yield from self._header
+        yield from (header := list(self._header))
 
         for pos_y, row in enumerate(self._grid):
             prefix = NUM_TO_STR[pos_y]
@@ -183,7 +183,9 @@ class Minefield:
                 self._stringify(cell, pos_x, pos_y)
                 for pos_x, cell in enumerate(row)
             )
-            yield f'{prefix}|{row}'
+            yield f'{prefix}|{row}|{prefix}'
+
+        yield from reversed(header)
 
     @property
     def _uninitialized(self) -> bool:
