@@ -126,7 +126,7 @@ class Cell:
 
 
 class Minefield:
-    """A mine field."""
+    """A minefield."""
 
     def __init__(self, width: int, height: int, mines: int):
         super().__init__()
