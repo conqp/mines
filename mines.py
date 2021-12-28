@@ -163,7 +163,10 @@ class Minefield:
                 yield PositionedCell(Vector2D(pos_x, pos_y), cell)
 
     def __contains__(self, item: Union[Cell, Vector2D]) -> bool:
-        return any(item is cell or item == position for position, cell in self)
+        if isinstance(item, Cell):
+            return item.position in self
+
+        return 0 <= item.x < self.width and 0 <= item.y < self.height
 
     def __getitem__(self, position: Vector2D) -> Cell:
         """Returns the cell at the given position."""
