@@ -208,9 +208,7 @@ class Minefield:
 
     def _neighbors(self, position: Vector2D) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
-        for neighbor in position.neighbors:
-            if (cell := self.get(neighbor)):
-                yield cell
+        return filter(None, map(self.get, position.neighbors))
 
     def _unvisited_neighbors(self, position: Vector2D) -> Iterator[Cell]:
         """Yield cells surrounding the given position that are unvisited."""
