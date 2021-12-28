@@ -340,6 +340,7 @@ def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
             text = input(prompt)
         except EOFError:
             print()
+            continue
 
         try:
             return Action.from_string(text)
