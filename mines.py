@@ -144,6 +144,13 @@ class Minefield:
 
         return NotImplemented
 
+    def __getitem__(self, position: Coordinate) -> Cell:
+        """Returns the cell at the given position."""
+        if not position in self:
+            raise NotOnField(position)
+
+        return self.grid[position.y][position.x]
+
     @property
     def header(self) -> Iterator[str]:
         """Returns the table header."""
@@ -169,18 +176,11 @@ class Minefield:
         """Checks whether all cells are uninitalized."""
         return all(cell.mine is None for cell in self)
 
-    def cell_at(self, position: Coordinate) -> Cell:
-        """Returns the cell at the given position."""
-        if not position in self:
-            raise NotOnField(position)
-
-        return self.grid[position.y][position.x]
-
     def get_neighbors(self, position: Coordinate) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
         for neighbor in position.neighbors:
             with suppress(NotOnField):
-                yield self.cell_at(neighbor)
+                yield self[neighbor]
 
     def count_surrounding_mines(self, position: Coordinate) -> int:
         """Return the amount of mines surrounding the given position."""
@@ -196,7 +196,7 @@ class Minefield:
 
     def disable_mine(self, position: Coordinate) -> None:
         """Set the cell at the given position to not have a mine."""
-        self.cell_at(position).mine = False
+        self[position].mine = False
 
     def populate(self) -> None:
         """Populate the minefield with mines."""
@@ -217,12 +217,12 @@ class Minefield:
 
     def toggle_marked(self, position: Coordinate) -> None:
         """Toggels the marker on the given cell."""
-        self.cell_at(position).toggle_marked()
+        self[position].toggle_marked()
 
     def _visit(self, position) -> None:
         """Visits the respective position."""
         try:
-            cell = self.cell_at(position)
+            cell = self[position]
         except NotOnField:
             return
 
