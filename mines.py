@@ -6,7 +6,6 @@ from argparse import ArgumentParser, Namespace
 from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
-from itertools import filterfalse
 from os import linesep
 from random import choice
 from string import digits, ascii_lowercase
@@ -283,10 +282,11 @@ class Action(NamedTuple):
     @classmethod
     def from_strings(cls, items: list[str]) -> Action:
         """Creates an action from a list of strings."""
-        position = Coordinate.from_strings(filter(str.isdigit, items))
+        coordinates = [item for item in items if item in STR_TO_NUM.keys()]
+        position = Coordinate.from_strings(coordinates)
 
         try:
-            action, *excess = filterfalse(str.isdigit, items)
+            action, *excess = filter(lambda i: i not in coordinates, items)
         except ValueError:
             return cls(ActionType.VISIT, position)
 
