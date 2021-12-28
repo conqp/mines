@@ -137,13 +137,15 @@ class Minefield:
     def __init__(self, width: int, height: int, mines: int):
         super().__init__()
 
+        if width < 1 or height < 1:
+            raise ValueError('Field is too small.')
+
         if width > (maxsize := len(NUM_TO_STR)) or height > maxsize:
             raise ValueError(f'Max field width and height are {maxsize}.')
 
         if mines >= (width * height - 1):
             raise ValueError('Too many mines for mine field.')
 
-        self._width = width
         self._mines = mines
         self._grid = [[Cell() for _ in range(width)] for _ in range(height)]
         self._game_over = None
@@ -168,11 +170,21 @@ class Minefield:
         raise IndexError(position)
 
     @property
+    def width(self) -> int:
+        """Returns the width of the field."""
+        return len(self._grid[0])
+
+    @property
+    def height(self) -> int:
+        """Returns the height of the field."""
+        return len(self._grid)
+
+    @property
     def _header(self) -> Iterator[str]:
         """Returns the table header."""
-        row = ' '.join(NUM_TO_STR[index] for index in range(self._width))
+        row = ' '.join(NUM_TO_STR[index] for index in range(self.width))
         yield f' |{row}| '
-        yield '-+' + '-' * (self._width * 2 - 1) + '+-'
+        yield '-+' + '-' * (self.width * 2 - 1) + '+-'
 
     @property
     def _lines(self) -> Iterator[str]:
