@@ -24,7 +24,6 @@ __all__ = [
     'NUM_TO_STR',
     'STR_TO_NUM',
     'GameOver',
-    'NotOnField',
     'Cell',
     'Coordinate',
     'Minefield',
@@ -66,10 +65,6 @@ class GameOver(Exception):
 
     def __str__(self) -> str:
         return self.message
-
-
-class NotOnField(Exception):
-    """Indicates that a given coodinate does not lie on the minefield."""
 
 
 @dataclass
@@ -165,7 +160,7 @@ class Minefield:
     def __getitem__(self, position: Coordinate) -> Cell:
         """Returns the cell at the given position."""
         if not position in self:
-            raise NotOnField(position)
+            raise IndexError(position)
 
         return self.grid[position.y][position.x]
 
@@ -197,7 +192,7 @@ class Minefield:
     def get_neighbors(self, position: Coordinate) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
         for neighbor in position.neighbors:
-            with suppress(NotOnField):
+            with suppress(IndexError):
                 yield self[neighbor]
 
     def count_surrounding_mines(self, position: Coordinate) -> int:
@@ -241,7 +236,7 @@ class Minefield:
         """Visits the respective position."""
         try:
             cell = self[position]
-        except NotOnField:
+        except IndexError:
             return
 
         if cell.visited or cell.marked:
@@ -366,7 +361,7 @@ def main() -> int:
     while True:
         try:
             play_round(minefield)
-        except NotOnField as err:
+        except IndexError as err:
             print(f'Coordinate must lie on the minefield: {err}', file=stderr)
         except KeyboardInterrupt:
             print('\nAborted by user.')
