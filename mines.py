@@ -279,7 +279,7 @@ class Minefield:
         return self._grid[position.y][position.x] if position in self else None
 
     def toggle_flag(self, position: Vector2D) -> None:
-        """Toggels the marker on the given cell."""
+        """Toggles the marker on the given cell."""
         self[position].toggle_flag()
 
     def visit(self, position: Vector2D) -> None:
