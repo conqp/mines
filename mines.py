@@ -363,7 +363,7 @@ def play_round(minefield: Minefield) -> None:
 
 
 def main() -> int:
-    """Test stuff."""
+    """Run the minesweeper game."""
 
     args = get_args()
 
