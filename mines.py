@@ -139,7 +139,7 @@ class Minefield:
         if isinstance(item, Cell):
             return any(cell is item for cell in self)
 
-        if isinstance(self, Coordinate):
+        if isinstance(item, Coordinate):
             return 0 <= item.x < self.width and 0 <= item.y < self.height
 
         return NotImplemented
