@@ -163,16 +163,6 @@ class Minefield:
         raise IndexError(position)
 
     @property
-    def width(self) -> int:
-        """Returns the width of the field."""
-        return len(self._grid[0])
-
-    @property
-    def height(self) -> int:
-        """Returns the height of the field."""
-        return len(self._grid)
-
-    @property
     def _header(self) -> Iterator[str]:
         """Returns the table header."""
         row = ' '.join(NUM_TO_STR[index] for index in range(self.width))
@@ -200,6 +190,16 @@ class Minefield:
     def _uninitialized_cells(self) -> list[Cell]:
         """Yield cells that have not been initialized."""
         return [cell for cell in self if cell.mine is None]
+
+    @property
+    def width(self) -> int:
+        """Returns the width of the field."""
+        return len(self._grid[0])
+
+    @property
+    def height(self) -> int:
+        """Returns the height of the field."""
+        return len(self._grid)
 
     def _neighbors(self, position: Vector2D) -> Iterator[Cell]:
         """Yield cells surrounding the given position."""
