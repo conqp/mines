@@ -135,7 +135,7 @@ class Minefield:
         if mines >= width * height:
             raise ValueError('Too many mines for mine field.')
 
-        self._mines = mines
+        self.mines = mines
         self._grid = [
             [Cell(Vector2D(x, y)) for x in range(width)] for y in range(height)
         ]
@@ -192,14 +192,14 @@ class Minefield:
         return [cell for cell in self if cell.mine is None]
 
     @property
-    def _flags(self) -> int:
+    def flags(self) -> int:
         """Returns the amount of flags set."""
         return sum(cell.flagged for cell in self)
 
     @property
-    def _remaining_mines(self) -> int:
+    def remaining_mines(self) -> int:
         """Return the amount of remaining mines."""
-        return self._mines - self._flags
+        return self.mines - self.flags
 
     @property
     def width(self) -> int:
@@ -260,7 +260,7 @@ class Minefield:
         # Ensure that we do not step on a mine on our first visit.
         self[start].mine = False
 
-        for cell in sample(self._uninitialized_cells, k=self._mines):
+        for cell in sample(self._uninitialized_cells, k=self.mines):
             cell.mine = True
 
         for cell in self._uninitialized_cells:
