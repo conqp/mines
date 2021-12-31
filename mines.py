@@ -261,10 +261,10 @@ class Minefield:
         self._result = result
         raise result
 
-    def _visit_cell(self, cell: Cell) -> bool:
+    def _visit_cell(self, cell: Cell) -> None:
         """Visits the given cell."""
         if cell.visited or cell.flagged:
-            return False
+            return
 
         cell.visited = True
 
@@ -273,8 +273,6 @@ class Minefield:
         elif all(cell.visited for cell in self if not cell.mine):
             self._end_game(GameOver.WON)
 
-        return True
-
     def _visit_neighbors(self, position: Vector2D) -> None:
         """Visits the neighbors of the given position."""
         unvisited = list(self._unvisited_neighbors(position))
@@ -282,7 +280,7 @@ class Minefield:
         while unvisited:
             self._visit_cell(cell := unvisited.pop())
 
-            if not self._surrounding_mines(cell.position):
+            if not self._remaining_mines(cell.position):
                 unvisited.extend(self._unvisited_neighbors(cell.position))
 
     def get(self, position: Vector2D) -> Optional[Cell]:
@@ -303,9 +301,10 @@ class Minefield:
         if self._uninitialized:
             self._initialize(position)
 
-        if self._visit_cell(self[position]):
-            if not self._surrounding_mines(position):
-                self._visit_neighbors(position)
+        self._visit_cell(self[position])
+
+        if not self._remaining_mines(position):
+            self._visit_neighbors(position)
 
 
 class ActionType(Enum):
