@@ -290,8 +290,10 @@ class Minefield:
         while unvisited:
             self._visit_cell(cell := unvisited.pop())
 
-            if not self._neighboring_mines(cell.position):
-                unvisited.extend(self._unvisited_neighbors(cell.position))
+            if cell.flagged or self._neighboring_mines(cell.position):
+                continue
+
+            unvisited.extend(self._unvisited_neighbors(cell.position))
 
     def get(self, position: Vector2D) -> Optional[Cell]:
         """Returns the cell at the given coordinate,
