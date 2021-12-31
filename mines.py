@@ -213,6 +213,10 @@ class Minefield:
         """Return the amount of mines surrounding the given position."""
         return sum(cell.mine for cell in self._neighbors(position))
 
+    def _surrounding_flags(self, position: Vector2D) -> int:
+        """Return the amount of flags surrounding the given position."""
+        return sum(cell.flagged for cell in self._neighbors(position))
+
     def _cell_to_str(self, cell: Cell) -> str:
         """Return a str representation of the cell."""
         if cell.flagged:
