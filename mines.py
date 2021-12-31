@@ -192,6 +192,16 @@ class Minefield:
         return [cell for cell in self if cell.mine is None]
 
     @property
+    def _flags(self) -> int:
+        """Returns the amount of flags set."""
+        return sum(cell.flagged for cell in self)
+
+    @property
+    def _remaining_mines(self) -> int:
+        """Return the amount of remaining mines."""
+        return self._mines - self._flags
+
+    @property
     def width(self) -> int:
         """Returns the width of the field."""
         return len(self._grid[0])
@@ -217,7 +227,7 @@ class Minefield:
         """Return the amount of flags surrounding the given position."""
         return sum(cell.flagged for cell in self._neighbors(position))
 
-    def _remaining_mines(self, position: Vector2D) -> int:
+    def _remaining_neighboring_mines(self, position: Vector2D) -> int:
         """Return the amount of remaining mines
         surrounding the given position.
         """
@@ -280,7 +290,7 @@ class Minefield:
         while unvisited:
             self._visit_cell(cell := unvisited.pop())
 
-            if not self._remaining_mines(cell.position):
+            if not self._remaining_neighboring_mines(cell.position):
                 unvisited.extend(self._unvisited_neighbors(cell.position))
 
     def get(self, position: Vector2D) -> Optional[Cell]:
@@ -303,7 +313,7 @@ class Minefield:
 
         self._visit_cell(self[position])
 
-        if not self._remaining_mines(position):
+        if not self._remaining_neighboring_mines(position):
             self._visit_neighbors(position)
 
 
