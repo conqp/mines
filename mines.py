@@ -209,11 +209,11 @@ class Minefield:
         """Yield cells surrounding the given position that are unvisited."""
         return filter(lambda cell: not cell.visited, self._neighbors(position))
 
-    def _surrounding_mines(self, position: Vector2D) -> int:
+    def _neighboring_mines(self, position: Vector2D) -> int:
         """Return the amount of mines surrounding the given position."""
         return sum(cell.mine for cell in self._neighbors(position))
 
-    def _surrounding_flags(self, position: Vector2D) -> int:
+    def _neighboring_flags(self, position: Vector2D) -> int:
         """Return the amount of flags surrounding the given position."""
         return sum(cell.flagged for cell in self._neighbors(position))
 
@@ -222,8 +222,8 @@ class Minefield:
         surrounding the given position.
         """
         return max([
-            0, self._surrounding_mines(position)
-            - self._surrounding_flags(position)
+            0, self._neighboring_mines(position)
+            - self._neighboring_flags(position)
         ])
 
     def _cell_to_str(self, cell: Cell) -> str:
@@ -238,7 +238,7 @@ class Minefield:
             return 'o'
 
         if not cell.mine and (cell.visited or self._result is not None):
-            if surrounding_mines := self._surrounding_mines(cell.position):
+            if surrounding_mines := self._neighboring_mines(cell.position):
                 return str(surrounding_mines)
 
             return ' '
