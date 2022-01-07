@@ -388,9 +388,8 @@ def play_round(minefield: Minefield) -> None:
     """Play a round."""
 
     print(minefield)
-    action = read_action()
 
-    if action.action == ActionType.FLAG:
+    if (action := read_action()).action == ActionType.FLAG:
         minefield.toggle_flag(action.position)
     else:
         minefield.visit(action.position)
