@@ -43,8 +43,8 @@ Toggle flags:
     $ ? <x> <y>'''
 
 
-class Returncode(Enum):
-    """Available returncodes."""
+class ReturnCode(Enum):
+    """Available return codes."""
 
     WON = 0
     LOST = 1
@@ -58,16 +58,16 @@ class Returncode(Enum):
 class GameOver(Exception, Enum):
     """Indicates that the game has ended."""
 
-    LOST = ('You stepped onto a mine. :(', Returncode.LOST)
-    WON = ('All mines cleared. Great job.', Returncode.WON)
+    LOST = ('You stepped onto a mine. :(', ReturnCode.LOST)
+    WON = ('All mines cleared. Great job.', ReturnCode.WON)
 
-    def __init__(self, message: str, returncode: Returncode):
+    def __init__(self, message: str, return_code: ReturnCode):
         super().__init__(message)
         self.message = message
-        self.returncode = returncode
+        self.return_code = return_code
 
     def __int__(self) -> int:
-        return int(self.returncode)
+        return int(self.return_code)
 
     def __str__(self) -> str:
         return self.message
@@ -183,7 +183,7 @@ class Minefield:
 
     @property
     def _uninitialized(self) -> bool:
-        """Check whether all cells are uninitalized."""
+        """Check whether all cells are uninitialized."""
         return all(cell.mine is None for cell in self)
 
     @property
@@ -193,7 +193,7 @@ class Minefield:
 
     @property
     def flags(self) -> int:
-        """Returns the amount of flags set."""
+        """Returns the amount of placed flags."""
         return sum(cell.flagged for cell in self)
 
     @property
@@ -256,7 +256,7 @@ class Minefield:
         return '■'
 
     def _initialize(self, start: Vector2D) -> None:
-        """Inistialize the mine field."""
+        """Initialize the minefield."""
         # Ensure that we do not step on a mine on our first visit.
         self[start].mine = False
 
@@ -408,7 +408,7 @@ def main() -> int:
         minefield = Minefield(args.width, args.height, args.mines)
     except ValueError as error:
         print(error, file=stderr)
-        return int(Returncode.INVALID_PARAMETER)
+        return int(ReturnCode.INVALID_PARAMETER)
 
     while True:
         try:
@@ -417,7 +417,7 @@ def main() -> int:
             print('Coordinates must lie on the minefield.', file=stderr)
         except KeyboardInterrupt:
             print('\nAborted by user.')
-            return int(Returncode.USER_ABORT)
+            return int(ReturnCode.USER_ABORT)
         except GameOver as game_over:
             print(minefield)
             print(game_over)
