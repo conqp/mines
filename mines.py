@@ -91,13 +91,13 @@ class Vector2D(NamedTuple):
 
     @property
     def neighbors(self) -> Iterator[Vector2D]:
-        """Yield fields surrounding this position."""
+        """Yield coordinates surrounding this position."""
         for delta_y in range(-1, 2):
             for delta_x in range(-1, 2):
                 if delta_x == delta_y == 0:
                     continue    # Skip the current position itself.
 
-                yield type(self)(self.x + delta_x, self.y + delta_y)
+                yield Vector2D(self.x + delta_x, self.y + delta_y)
 
 
 @dataclass
