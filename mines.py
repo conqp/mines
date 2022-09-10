@@ -43,7 +43,7 @@ Toggle flags:
     $ ? <x> <y>'''
 
 
-class ReturnCode(Enum):
+class ReturnCode(int, Enum):
     """Available return codes."""
 
     WON = 0
@@ -319,7 +319,7 @@ class Minefield:
             self._visit_neighbors(position)
 
 
-class ActionType(Enum):
+class ActionType(int, Enum):
     """Game actions."""
 
     FLAG = auto()
