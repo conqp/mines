@@ -8,39 +8,39 @@ from enum import Enum, auto
 from os import linesep
 from random import sample
 from string import digits, ascii_lowercase
-from sys import exit, stderr    # pylint: disable=W0622
+from sys import exit, stderr  # pylint: disable=W0622
 from typing import Iterable, Iterator, NamedTuple, Optional, Union
 from warnings import warn
 
 try:
-    import readline     # pylint: disable=W0611
+    import readline  # pylint: disable=W0611
 except ModuleNotFoundError:
     warn('Module "readline" is not available. Limited console functionality.')
 
 
 __all__ = [
-    'NUM_TO_STR',
-    'STR_TO_NUM',
-    'GameOver',
-    'Vector2D',
-    'Cell',
-    'Minefield',
-    'ActionType',
-    'Action',
-    'read_action',
-    'get_args',
-    'play_round',
-    'main'
+    "NUM_TO_STR",
+    "STR_TO_NUM",
+    "GameOver",
+    "Vector2D",
+    "Cell",
+    "Minefield",
+    "ActionType",
+    "Action",
+    "read_action",
+    "get_args",
+    "play_round",
+    "main",
 ]
 
 
 NUM_TO_STR = dict(enumerate(digits + ascii_lowercase))
 STR_TO_NUM = {value: key for key, value in NUM_TO_STR.items()}
-USAGE = '''Visit fields:
+USAGE = """Visit fields:
     $ <x> <y>
 
 Toggle flags:
-    $ ? <x> <y>'''
+    $ ? <x> <y>"""
 
 
 class ReturnCode(int, Enum):
@@ -58,8 +58,8 @@ class ReturnCode(int, Enum):
 class GameOver(Exception, Enum):
     """Indicates that the game has ended."""
 
-    LOST = ('You stepped onto a mine. :(', ReturnCode.LOST)
-    WON = ('All mines cleared. Great job.', ReturnCode.WON)
+    LOST = ("You stepped onto a mine. :(", ReturnCode.LOST)
+    WON = ("All mines cleared. Great job.", ReturnCode.WON)
 
     def __init__(self, message: str, return_code: ReturnCode):
         super().__init__(message)
@@ -85,9 +85,9 @@ class Vector2D(NamedTuple):
         try:
             return cls(*map(lambda pos: STR_TO_NUM[pos], strings))
         except KeyError as error:
-            raise ValueError(f'Invalid coordinate value: {error}') from None
+            raise ValueError(f"Invalid coordinate value: {error}") from None
         except TypeError:
-            raise ValueError('Expect two coordinates: x and y') from None
+            raise ValueError("Expect two coordinates: x and y") from None
 
     @property
     def neighbors(self) -> Iterator[Vector2D]:
@@ -95,7 +95,7 @@ class Vector2D(NamedTuple):
         for delta_y in range(-1, 2):
             for delta_x in range(-1, 2):
                 if delta_x == delta_y == 0:
-                    continue    # Skip the current position itself.
+                    continue  # Skip the current position itself.
 
                 yield Vector2D(self.x + delta_x, self.y + delta_y)
 
@@ -124,16 +124,16 @@ class Minefield:
         super().__init__()
 
         if width < 1 or height < 1:
-            raise ValueError('Field is too small.')
+            raise ValueError("Field is too small.")
 
         if width > (maxsize := len(NUM_TO_STR)) or height > maxsize:
-            raise ValueError(f'Max field width and height are {maxsize}.')
+            raise ValueError(f"Max field width and height are {maxsize}.")
 
         if mines < 0:
-            raise ValueError('Amount of mines cannot be negative.')
+            raise ValueError("Amount of mines cannot be negative.")
 
         if mines >= width * height:
-            raise ValueError('Too many mines for mine field.')
+            raise ValueError("Too many mines for mine field.")
 
         self.mines = mines
         self._grid = [
@@ -165,9 +165,9 @@ class Minefield:
     @property
     def _header(self) -> Iterator[str]:
         """Returns the table header."""
-        row = ' '.join(NUM_TO_STR[index] for index in range(self.width))
-        yield f' |{row}| '
-        yield ''.join(['-+', '-' * (self.width * 2 - 1), '+-'])
+        row = " ".join(NUM_TO_STR[index] for index in range(self.width))
+        yield f" |{row}| "
+        yield "".join(["-+", "-" * (self.width * 2 - 1), "+-"])
 
     @property
     def _lines(self) -> Iterator[str]:
@@ -176,8 +176,8 @@ class Minefield:
 
         for pos_y, row in enumerate(self._grid):
             prefix = NUM_TO_STR[pos_y]
-            row = ' '.join(self._cell_to_str(cell) for cell in row)
-            yield f'{prefix}|{row}|{prefix}'
+            row = " ".join(self._cell_to_str(cell) for cell in row)
+            yield f"{prefix}|{row}|{prefix}"
 
         yield from reversed(header)
 
@@ -231,29 +231,28 @@ class Minefield:
         """Return the amount of remaining mines
         surrounding the given position.
         """
-        return max([
-            0, self._neighboring_mines(position)
-            - self._neighboring_flags(position)
-        ])
+        return max(
+            [0, self._neighboring_mines(position) - self._neighboring_flags(position)]
+        )
 
     def _cell_to_str(self, cell: Cell) -> str:
         """Return a str representation of the cell."""
         if cell.flagged:
-            return '?' if self._result is None else ('!' if cell.mine else 'x')
+            return "?" if self._result is None else ("!" if cell.mine else "x")
 
         if cell.mine and cell.visited:
-            return '*'
+            return "*"
 
         if cell.mine and self._result is not None:
-            return 'o'
+            return "o"
 
         if not cell.mine and (cell.visited or self._result is not None):
             if surrounding_mines := self._neighboring_mines(cell.position):
                 return str(surrounding_mines)
 
-            return ' '
+            return " "
 
-        return '■'
+        return "■"
 
     def _initialize(self, start: Vector2D) -> None:
         """Initialize the minefield."""
@@ -344,12 +343,12 @@ class Action(NamedTuple):
             return cls(ActionType.VISIT, position)
 
         if excess:
-            raise ValueError('Must specify at most one action.')
+            raise ValueError("Must specify at most one action.")
 
-        if action == '?':
+        if action == "?":
             return cls(ActionType.FLAG, position)
 
-        raise ValueError(f'Action not recognized: {action}')
+        raise ValueError(f"Action not recognized: {action}")
 
     @classmethod
     def from_string(cls, text: str) -> Action:
@@ -357,7 +356,7 @@ class Action(NamedTuple):
         return cls.from_strings(text.strip().split())
 
 
-def read_action(prompt: str = 'Enter action and coordinate: ') -> Action:
+def read_action(prompt: str = "Enter action and coordinate: ") -> Action:
     """Reads an Action."""
 
     while True:
@@ -377,10 +376,10 @@ def get_args(description: str = __doc__) -> Namespace:
     """Parses the command line arguments."""
 
     parser = ArgumentParser(description=description)
-    parser.add_argument('-x', '--width', type=int, metavar='x', default=8)
-    parser.add_argument('-y', '--height', type=int, metavar='y', default=8)
-    parser.add_argument('-m', '--mines', type=int, metavar='n', default=10)
-    parser.add_argument('-u', '--usage', action='store_true')
+    parser.add_argument("-x", "--width", type=int, metavar="x", default=8)
+    parser.add_argument("-y", "--height", type=int, metavar="y", default=8)
+    parser.add_argument("-m", "--mines", type=int, metavar="n", default=10)
+    parser.add_argument("-u", "--usage", action="store_true")
     return parser.parse_args()
 
 
@@ -414,9 +413,9 @@ def main() -> int:
         try:
             play_round(minefield)
         except IndexError:
-            print('Coordinates must lie on the minefield.', file=stderr)
+            print("Coordinates must lie on the minefield.", file=stderr)
         except KeyboardInterrupt:
-            print('\nAborted by user.')
+            print("\nAborted by user.")
             return int(ReturnCode.USER_ABORT)
         except GameOver as game_over:
             print(minefield)
@@ -424,5 +423,5 @@ def main() -> int:
             return int(game_over)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())
